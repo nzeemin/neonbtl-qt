@@ -1,0 +1,11 @@
+/emulator/debug
+/emulator/release
+/emulator/Makefile.*
+/emulator/Makefile
+/object_script.*
+*.user
+/emulator/ui_mainwindow.h
+*.o
+moc_*.cpp
+/emulator/.qmake.stash
+/emulator/trace.log

@@ -1,0 +1,20 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/keyboard.png</file>
+        <file>images/iconRun.svg</file>
+        <file>images/iconReset.svg</file>
+        <file>images/iconFloppy.svg</file>
+        <file>images/iconFloppySlot.svg</file>
+        <file>images/iconHdd.svg</file>
+        <file>images/iconHddSlot.svg</file>
+        <file>images/iconSound.svg</file>
+        <file>images/iconSoundOff.svg</file>
+        <file>images/iconStepInto.svg</file>
+        <file>images/iconStepOver.svg</file>
+        <file>images/iconWordByte.svg</file>
+        <file>images/iconEditAddress.svg</file>
+        <file>images/iconScreenshot.svg</file>
+        <file>images/iconDebugger.svg</file>
+        <file>pk11.rom</file>
+    </qresource>
+</RCC>
