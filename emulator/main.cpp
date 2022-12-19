@@ -71,6 +71,11 @@ int main(int argc, char *argv[])
     if (!Emulator_Init())
         return 255;
 
+    int conf = Settings_GetConfiguration();
+    //if (conf == 0) //TODO
+    if (!Emulator_InitConfiguration((NeonConfiguration)conf))
+        return false;
+
     w.restoreSettings();
 
     w.show();

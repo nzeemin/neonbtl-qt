@@ -367,7 +367,7 @@ uint16_t CMotherboard::GetWord(uint16_t address, bool okHaltMode, bool okExec)
         //TODO: What to do if okExec == true ?
         return GetPortWord(address);
     case ADDRTYPE_EMUL:
-        DebugLogFormat(_T("%06o\tGETWORD (%06o) EMUL\n"), m_pCPU->GetInstructionPC(), address);
+        DebugLogFormat(_T("%06ho\tGETWORD (%06ho) EMUL\n"), m_pCPU->GetInstructionPC(), address);
         m_pCPU->SetHALTPin(true);
         if ((m_PortPPIB & 1) == 0)
         {
@@ -379,7 +379,7 @@ uint16_t CMotherboard::GetWord(uint16_t address, bool okHaltMode, bool okExec)
         }
         return GetRAMWord(offset & 07777);
     case ADDRTYPE_DENY:
-        DebugLogFormat(_T("%06o\tGETWORD DENY (%06o)\n"), m_pCPU->GetInstructionPC(), address);
+        DebugLogFormat(_T("%06ho\tGETWORD DENY (%06ho)\n"), m_pCPU->GetInstructionPC(), address);
         m_pCPU->MemoryError();
         return 0;
     }
@@ -403,7 +403,7 @@ uint8_t CMotherboard::GetByte(uint16_t address, bool okHaltMode)
         //TODO: What to do if okExec == true ?
         return GetPortByte(address);
     case ADDRTYPE_EMUL:
-        DebugLogFormat(_T("%06o\tGETBYTE (%06o) EMUL\n"), m_pCPU->GetInstructionPC(), address);
+        DebugLogFormat(_T("%06ho\tGETBYTE (%06ho) EMUL\n"), m_pCPU->GetInstructionPC(), address);
         m_pCPU->SetHALTPin(true);
         if ((m_PortPPIB & 1) == 0)
         {
@@ -415,7 +415,7 @@ uint8_t CMotherboard::GetByte(uint16_t address, bool okHaltMode)
         }
         return GetRAMByte(offset & 07777);
     case ADDRTYPE_DENY:
-        DebugLogFormat(_T("%06o\tGETBYTE DENY (%06o)\n"), m_pCPU->GetInstructionPC(), address);
+        DebugLogFormat(_T("%06ho\tGETBYTE DENY (%06ho)\n"), m_pCPU->GetInstructionPC(), address);
         m_pCPU->MemoryError();
         return 0;
     }
@@ -437,14 +437,14 @@ void CMotherboard::SetWord(uint16_t address, bool okHaltMode, uint16_t word)
         SetRAMWord(offset, word);
         return;
     case ADDRTYPE_ROM:  // Writing to ROM
-        //DebugLogFormat(_T("%06o\tSETWORD ROM (%06o)\n"), m_pCPU->GetInstructionPC(), address);
+        //DebugLogFormat(_T("%06ho\tSETWORD ROM (%06ho)\n"), m_pCPU->GetInstructionPC(), address);
         //m_pCPU->MemoryError();
         return;
     case ADDRTYPE_IO:
         SetPortWord(address, word);
         return;
     case ADDRTYPE_EMUL:
-        DebugLogFormat(_T("%06o\tSETWORD %06o -> (%06o) EMUL\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETWORD %06ho -> (%06ho) EMUL\n"), m_pCPU->GetInstructionPC(), word, address);
         SetRAMWord(offset & 07777, word);
         m_pCPU->SetHALTPin(true);
         if ((m_PortPPIB & 1) == 0)
@@ -457,7 +457,7 @@ void CMotherboard::SetWord(uint16_t address, bool okHaltMode, uint16_t word)
         }
         return;
     case ADDRTYPE_DENY:
-        DebugLogFormat(_T("%06o\tSETWORD DENY (%06o)\n"), m_pCPU->GetInstructionPC(), address);
+        DebugLogFormat(_T("%06ho\tSETWORD DENY (%06ho)\n"), m_pCPU->GetInstructionPC(), address);
         m_pCPU->MemoryError();
         return;
     }
@@ -476,14 +476,14 @@ void CMotherboard::SetByte(uint16_t address, bool okHaltMode, uint8_t byte)
         SetRAMByte(offset, byte);
         return;
     case ADDRTYPE_ROM:  // Writing to ROM
-        //DebugLogFormat(_T("%06o\tSETBYTE ROM (%06o)\n"), m_pCPU->GetInstructionPC(), address);
+        //DebugLogFormat(_T("%06ho\tSETBYTE ROM (%06ho)\n"), m_pCPU->GetInstructionPC(), address);
         //m_pCPU->MemoryError();
         return;
     case ADDRTYPE_IO:
         SetPortByte(address, byte);
         return;
     case ADDRTYPE_EMUL:
-        DebugLogFormat(_T("%06o\tSETBYTE %03o -> (%06o) EMUL\n"), m_pCPU->GetInstructionPC(), byte, address);
+        DebugLogFormat(_T("%06ho\tSETBYTE %03o -> (%06ho) EMUL\n"), m_pCPU->GetInstructionPC(), byte, address);
         SetRAMByte(offset & 07777, byte);
         m_pCPU->SetHALTPin(true);
         if ((m_PortPPIB & 1) == 0)
@@ -496,7 +496,7 @@ void CMotherboard::SetByte(uint16_t address, bool okHaltMode, uint8_t byte)
         }
         return;
     case ADDRTYPE_DENY:
-        DebugLogFormat(_T("%06o\tSETBYTE DENY (%06o)\n"), m_pCPU->GetInstructionPC(), address);
+        DebugLogFormat(_T("%06ho\tSETBYTE DENY (%06ho)\n"), m_pCPU->GetInstructionPC(), address);
         m_pCPU->MemoryError();
         return;
     }
@@ -565,33 +565,33 @@ uint16_t CMotherboard::GetPortWord(uint16_t address)
     switch (address)
     {
     case 0161000:  // PICCSR
-        DebugLogFormat(_T("%06o\tGETPORT PICCSR = %06o\n"), m_pCPU->GetInstructionPC(), 0);
+        DebugLogFormat(_T("%06ho\tGETPORT PICCSR = %06ho\n"), m_pCPU->GetInstructionPC(), 0);
         return 0;//TODO
 
     case 0161002:  // PICMR
-        DebugLogFormat(_T("%06o\tGETPORT PICMR = %06o\n"), m_pCPU->GetInstructionPC(), 0);
+        DebugLogFormat(_T("%06ho\tGETPORT PICMR = %06ho\n"), m_pCPU->GetInstructionPC(), 0);
         return 0;//TODO
 
     case 0161014:
-        DebugLogFormat(_T("%06o\tGETPORT SNDС2R = %06o\n"), m_pCPU->GetInstructionPC(), 0);
+        DebugLogFormat(_T("%06ho\tGETPORT SNDС2R = %06ho\n"), m_pCPU->GetInstructionPC(), 0);
         return 0;//TODO
 
     case 0161032:  // PPIB
         result = 0xfffc | m_PortPPIB;
-        DebugLogFormat(_T("%06o\tGETPORT PPIB = %06o\n"), m_pCPU->GetInstructionPC(), result);
+        DebugLogFormat(_T("%06ho\tGETPORT PPIB = %06ho\n"), m_pCPU->GetInstructionPC(), result);
         return result;
 
     case 0161034:  // PPIC
-        DebugLogFormat(_T("%06o\tGETPORT PPIC = %06o\n"), m_pCPU->GetInstructionPC(), m_PortPPIC);
+        DebugLogFormat(_T("%06ho\tGETPORT PPIC = %06ho\n"), m_pCPU->GetInstructionPC(), m_PortPPIC);
         return m_PortPPIC;
 
     case 0161060:
-        DebugLogFormat(_T("%06o\tGETPORT DLBUF\n"), m_pCPU->GetInstructionPC(), address);
+        DebugLogFormat(_T("%06ho\tGETPORT DLBUF\n"), m_pCPU->GetInstructionPC(), address);
         //TODO: DLBUF -- Programmable parallel port
         return 0;
     case 0161062:  // DLCSR
         //TODO: DLCSR -- Programmable parallel port
-        DebugLogFormat(_T("%06o\tGETPORT DLCSR\n"), m_pCPU->GetInstructionPC(), address);
+        DebugLogFormat(_T("%06ho\tGETPORT DLCSR\n"), m_pCPU->GetInstructionPC(), address);
         return 0;
 
     case 0161200:
@@ -604,7 +604,7 @@ uint16_t CMotherboard::GetPortWord(uint16_t address)
     case 0161216:
         {
             int chunk = (address >> 1) & 7;
-            DebugLogFormat(_T("%06o\tGETPORT HR%d = %06o\n"), m_pCPU->GetInstructionPC(), chunk, m_HR[chunk]);
+            DebugLogFormat(_T("%06ho\tGETPORT HR%d = %06ho\n"), m_pCPU->GetInstructionPC(), chunk, m_HR[chunk]);
             return m_HR[chunk];
         }
 
@@ -618,7 +618,7 @@ uint16_t CMotherboard::GetPortWord(uint16_t address)
     case 0161236:
         {
             int chunk = (address >> 1) & 7;
-            DebugLogFormat(_T("%06o\tGETPORT UR%d = %06o\n"), m_pCPU->GetInstructionPC(), chunk, m_UR[chunk]);
+            DebugLogFormat(_T("%06ho\tGETPORT UR%d = %06ho\n"), m_pCPU->GetInstructionPC(), chunk, m_UR[chunk]);
             return m_UR[chunk];
         }
 
@@ -634,7 +634,7 @@ uint16_t CMotherboard::GetPortWord(uint16_t address)
         return GetRtcPortValue(address);
 
     default:
-        DebugLogFormat(_T("%06o\tGETPORT Unknown (%06o)\n"), m_pCPU->GetInstructionPC(), address);
+        DebugLogFormat(_T("%06ho\tGETPORT Unknown (%06ho)\n"), m_pCPU->GetInstructionPC(), address);
         m_pCPU->MemoryError();
         return 0;
     }
@@ -720,59 +720,59 @@ void CMotherboard::SetPortWord(uint16_t address, uint16_t word)
     switch (address)
     {
     case 0161000:  // PICCSR
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o) PICCSR\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho) PICCSR\n"), m_pCPU->GetInstructionPC(), word, address);
         break;
     case 0161002:  // PICMR
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o) PICMR\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho) PICMR\n"), m_pCPU->GetInstructionPC(), word, address);
         break;
 
     case 0161012:
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o) SNDC0R\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho) SNDC0R\n"), m_pCPU->GetInstructionPC(), word, address);
         //TODO: SNDC0R -- Sound control
         break;
     case 0161014:
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o) SNDC1R\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho) SNDC1R\n"), m_pCPU->GetInstructionPC(), word, address);
         //TODO: SNDC1R -- Sound control
         break;
     case 0161016:
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o) SNDCSR\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho) SNDCSR\n"), m_pCPU->GetInstructionPC(), word, address);
         //TODO: SNDCSR -- Sound control
         break;
     case 0161026:
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o) SNLCSR\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho) SNLCSR\n"), m_pCPU->GetInstructionPC(), word, address);
         //TODO: SNLCSR -- Sound control
         break;
 
     case 0161030:
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o) PPIA\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho) PPIA\n"), m_pCPU->GetInstructionPC(), word, address);
         //TODO: PPIA -- Parallel port
         break;
     case 0161032:
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o) PPIB\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho) PPIB\n"), m_pCPU->GetInstructionPC(), word, address);
         //TODO: PPIB -- Parallel port data
         break;
     case 0161034:  // PPIC
         PrintBinaryValue(buffer, word);
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o) PPIC %s\n"), m_pCPU->GetInstructionPC(), word, address, buffer + 12);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho) PPIC %s\n"), m_pCPU->GetInstructionPC(), word, address, buffer + 12);
         m_PortPPIC = word;
         break;
     case 0161036:
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o) PPIP\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho) PPIP\n"), m_pCPU->GetInstructionPC(), word, address);
         //TODO: PPIP -- Parallel port mode control
         break;
 
     case 0161060:
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o) DLBUF\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho) DLBUF\n"), m_pCPU->GetInstructionPC(), word, address);
         if (m_SerialOutCallback != nullptr)
             (*m_SerialOutCallback)(word & 0xff);
         break;
     case 0161062:  // DLCSR
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o) DLCSR\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho) DLCSR\n"), m_pCPU->GetInstructionPC(), word, address);
         //TODO: DLCSR -- Programmable Parallel port control
         break;
 
     case 0161066:
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o) KBDBUF\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho) KBDBUF\n"), m_pCPU->GetInstructionPC(), word, address);
         //TODO: KBDBUF -- Keyboard buffer
         break;
 
@@ -785,7 +785,7 @@ void CMotherboard::SetPortWord(uint16_t address, uint16_t word)
     case 0161214:
     case 0161216:
         {
-            DebugLogFormat(_T("%06o\tSETPORT HR %06o -> (%06o)\n"), m_pCPU->GetInstructionPC(), word, address);
+            DebugLogFormat(_T("%06ho\tSETPORT HR %06ho -> (%06ho)\n"), m_pCPU->GetInstructionPC(), word, address);
             int chunk = (address >> 1) & 7;
             m_HR[chunk] = word;
             break;
@@ -800,18 +800,18 @@ void CMotherboard::SetPortWord(uint16_t address, uint16_t word)
     case 0161234:
     case 0161236:
         {
-            DebugLogFormat(_T("%06o\tSETPORT UR %06o -> (%06o)\n"), m_pCPU->GetInstructionPC(), word, address);
+            DebugLogFormat(_T("%06ho\tSETPORT UR %06ho -> (%06ho)\n"), m_pCPU->GetInstructionPC(), word, address);
             int chunk = (address >> 1) & 7;
             m_UR[chunk] = word;
             break;
         }
 
     case 0161412:  // Unknown port
-        DebugLogFormat(_T("%06o\tSETPORT %06o -> (%06o)\n"), m_pCPU->GetInstructionPC(), word, address);
+        DebugLogFormat(_T("%06ho\tSETPORT %06ho -> (%06ho)\n"), m_pCPU->GetInstructionPC(), word, address);
         break;
 
     default:
-        DebugLogFormat(_T("SETPORT Unknown %06o = %06o @ %06o\n"), address, word, m_pCPU->GetInstructionPC());
+        DebugLogFormat(_T("SETPORT Unknown %06ho = %06ho @ %06ho\n"), address, word, m_pCPU->GetInstructionPC());
         m_pCPU->MemoryError();
         break;
     }

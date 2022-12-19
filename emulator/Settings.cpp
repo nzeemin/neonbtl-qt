@@ -12,6 +12,16 @@ bool Option_ShowHelp = false;
 //////////////////////////////////////////////////////////////////////
 
 
+void Settings_SetConfiguration(int configuration)
+{
+    Global_getSettings()->setValue("Configuration", configuration);
+}
+int Settings_GetConfiguration()
+{
+    QVariant value = Global_getSettings()->value("Configuration", 0);
+    return value.toInt();
+}
+
 void Settings_SetFloppyFilePath(int slot, const QString & sFilePath)
 {
     char bufValueName[] = "Floppy0";

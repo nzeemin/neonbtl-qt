@@ -11,17 +11,17 @@
 #endif
 
 // C RunTime Header Files
-#include <string.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
+#include <cstring>
+#include <cstdio>
+#include <cstdint>
+#include <cstdbool>
 
 #ifdef _MSC_VER
-#include <stdlib.h>
+#include <cstdlib>
 #endif
 
 #ifdef __APPLE__
-#include <stdlib.h>
+#include <cstdlib>
 #else
 #include <malloc.h>
 #endif

@@ -70,7 +70,7 @@ void DebugPrintFormat(const char* pszFormat, ...)
 
     va_list ptr;
     va_start(ptr, pszFormat);
-    _snprintf(buffer, 512, pszFormat, ptr);
+    vsnprintf(buffer, 512, pszFormat, ptr);
     va_end(ptr);
 
     DebugPrint(buffer);
@@ -101,7 +101,7 @@ void DebugLogFormat(const char* pszFormat, ...)
 
     va_list ptr;
     va_start(ptr, pszFormat);
-    _snprintf(buffer, 512, pszFormat, ptr);
+    vsnprintf(buffer, 512, pszFormat, ptr);
     va_end(ptr);
 
     DebugLog(buffer);

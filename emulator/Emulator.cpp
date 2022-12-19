@@ -938,7 +938,7 @@ void Emulator_PrepareScreenLines(void* pImageBits, SCREEN_LINE_CALLBACK lineCall
 
 void CALLBACK PrepareScreenLine416x300(uint32_t* pImageBits, const uint32_t* pLineBits, int line)
 {
-    uint32_t* pBits = pImageBits + (300 - 1 - line) * 416;
+    uint32_t* pBits = pImageBits + line * 416;
     for (int x = 0; x < 832; x += 2)
     {
         uint32_t color1 = *pLineBits++;
@@ -951,9 +951,9 @@ void CALLBACK PrepareScreenLine416x300(uint32_t* pImageBits, const uint32_t* pLi
 void CALLBACK PrepareScreenLine624x450(uint32_t* pImageBits, const uint32_t* pLineBits, int line)
 {
     bool even = (line & 1) == 0;
-    uint32_t* pBits = pImageBits + (450 - 1 - line / 2 * 3) * 624;
+    uint32_t* pBits = pImageBits + (line / 2 * 3) * 624;
     if (!even)
-        pBits -= 624 * 2;
+        pBits += 624 * 2;
 
     uint32_t* p = pBits;
     for (int x = 0; x < 832; x += 4)  // x0.75 - mapping every 4 pixels into 3 pixels
@@ -970,8 +970,8 @@ void CALLBACK PrepareScreenLine624x450(uint32_t* pImageBits, const uint32_t* pLi
     if (!even)  // odd line
     {
         uint32_t* pBits1 = pBits;
-        uint32_t* pBits12 = pBits1 + 624;
-        uint32_t* pBits2 = pBits12 + 624;
+        uint32_t* pBits12 = pBits1 - 624;
+        uint32_t* pBits2 = pBits12 - 624;
         for (int x = 0; x < 624; x++)
         {
             uint32_t color1 = *pBits1++;
@@ -984,7 +984,7 @@ void CALLBACK PrepareScreenLine624x450(uint32_t* pImageBits, const uint32_t* pLi
 
 void CALLBACK PrepareScreenLine832x600(uint32_t* pImageBits, const uint32_t* pLineBits, int line)
 {
-    uint32_t* pBits = pImageBits + (300 - 1 - line) * 832 * 2;
+    uint32_t* pBits = pImageBits + line * 832 * 2;
     memcpy(pBits, pLineBits, sizeof(uint32_t) * 832);
     pBits += 832;
     memcpy(pBits, pLineBits, sizeof(uint32_t) * 832);
@@ -993,9 +993,9 @@ void CALLBACK PrepareScreenLine832x600(uint32_t* pImageBits, const uint32_t* pLi
 void CALLBACK PrepareScreenLine1040x750(uint32_t* pImageBits, const uint32_t* pLineBits, int line)
 {
     bool even = (line & 1) == 0;
-    uint32_t* pBits = pImageBits + (750 - 1 - line / 2 * 5) * 1040;
+    uint32_t* pBits = pImageBits + (line / 2 * 5) * 1040;
     if (!even)
-        pBits -= 1040 * 3;
+        pBits += 1040 * 3;
 
     uint32_t* p = pBits;
     for (int x = 0; x < 832; x += 4)  // x1.25 - mapping every 4 pixels into 5 pixels
@@ -1011,13 +1011,13 @@ void CALLBACK PrepareScreenLine1040x750(uint32_t* pImageBits, const uint32_t* pL
         *p++ = color4;
     }
 
-    memcpy(pBits - 1040, pBits, sizeof(uint32_t) * 1040);
+    memcpy(pBits + 1040, pBits, sizeof(uint32_t) * 1040);
 
     if (!even)  // odd line
     {
         uint32_t* pBits1 = pBits;
-        uint32_t* pBits12 = pBits1 + 1040;
-        uint32_t* pBits2 = pBits12 + 1040;
+        uint32_t* pBits12 = pBits1 - 1040;
+        uint32_t* pBits2 = pBits12 - 1040;
         for (int x = 0; x < 1040; x++)
         {
             uint32_t color1 = *pBits1++;
@@ -1030,7 +1030,7 @@ void CALLBACK PrepareScreenLine1040x750(uint32_t* pImageBits, const uint32_t* pL
 
 void CALLBACK PrepareScreenLine1248x900(uint32_t* pImageBits, const uint32_t* pLineBits, int line)
 {
-    uint32_t* pBits = pImageBits + (300 - 1 - line) * 1248 * 3;
+    uint32_t* pBits = pImageBits + line * 1248 * 3;
     uint32_t* p = pBits;
     for (int x = 0; x < 832 / 2; x++)
     {
