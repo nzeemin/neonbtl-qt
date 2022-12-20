@@ -54,6 +54,7 @@ public:
     virtual DebugCtrlHitTest hitTest(int x, int y);
 
 public slots:
+    void copyAddressOctal();
     void copyValueOctal();
     void copyValueHex();
     void copyValueBinary();
@@ -91,6 +92,8 @@ public:
     QDebugStackCtrl(QDebugView *debugView);
 
     virtual void updateData();
+    virtual DebugCtrlHitTest hitTest(int x, int y);
+    void contextMenuEvent(QContextMenuEvent *event);
 
 protected:
     void paintEvent(QPaintEvent *event);
