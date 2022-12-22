@@ -43,8 +43,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->actionactionEmulatorAutostart, SIGNAL(triggered()), this, SLOT(emulatorAutostart()));
     QObject::connect(ui->actionDrivesFloppy0, SIGNAL(triggered()), this, SLOT(emulatorFloppy0()));
     QObject::connect(ui->actionDrivesFloppy1, SIGNAL(triggered()), this, SLOT(emulatorFloppy1()));
-    QObject::connect(ui->actionDrivesHard1, SIGNAL(triggered()), this, SLOT(emulatorHardDrive1()));
-    QObject::connect(ui->actionDrivesHard2, SIGNAL(triggered()), this, SLOT(emulatorHardDrive2()));
+    QObject::connect(ui->actionDrivesHard, SIGNAL(triggered()), this, SLOT(emulatorHardDrive()));
     QObject::connect(ui->actionDebugConsoleView, SIGNAL(triggered()), this, SLOT(debugConsoleView()));
     QObject::connect(ui->actionDebugDebugView, SIGNAL(triggered()), this, SLOT(debugDebugView()));
     QObject::connect(ui->actionDebugDisasmView, SIGNAL(triggered()), this, SLOT(debugDisasmView()));
@@ -60,6 +59,10 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->actionViewMode2, SIGNAL(triggered()), this, SLOT(viewViewMode2()));
     QObject::connect(ui->actionViewMode3, SIGNAL(triggered()), this, SLOT(viewViewMode3()));
     QObject::connect(ui->actionViewMode4, SIGNAL(triggered()), this, SLOT(viewViewMode4()));
+    QObject::connect(ui->actionConfRam512, SIGNAL(triggered()), this, SLOT(confRam512()));
+    QObject::connect(ui->actionConfRam1024, SIGNAL(triggered()), this, SLOT(confRam1024()));
+    QObject::connect(ui->actionConfRam2048, SIGNAL(triggered()), this, SLOT(confRam2048()));
+    QObject::connect(ui->actionConfRam4096, SIGNAL(triggered()), this, SLOT(confRam4096()));
     QObject::connect(ui->actionSoundEnabled, SIGNAL(triggered()), this, SLOT(soundEnabled()));
 
     // Screen and keyboard
@@ -210,15 +213,19 @@ void MainWindow::updateMenu()
 
     ui->actionViewKeyboard->setChecked(m_keyboard->isVisible());
 
+    int conf = Settings_GetConfiguration();
+    ui->actionConfRam512->setChecked((conf & NEON_COPT_RAMSIZE_MASK) <= 512);
+    ui->actionConfRam1024->setChecked((conf & NEON_COPT_RAMSIZE_MASK) == 1024);
+    ui->actionConfRam2048->setChecked((conf & NEON_COPT_RAMSIZE_MASK) == 2048);
+    ui->actionConfRam4096->setChecked((conf & NEON_COPT_RAMSIZE_MASK) == 4096);
+
     ui->actionDrivesFloppy0->setIcon(QIcon(
             g_pBoard->IsFloppyImageAttached(0) ? ":/images/iconFloppy.svg" : ":/images/iconFloppySlot.svg" ));
     ui->actionDrivesFloppy1->setIcon(QIcon(
             g_pBoard->IsFloppyImageAttached(1) ? ":/images/iconFloppy.svg" : ":/images/iconFloppySlot.svg" ));
 
-//    ui->actionDrivesHard1->setIcon(QIcon(
-//            g_pBoard->IsHardImageAttached(1) ? ":/images/iconHdd.svg" : ":/images/iconHddSlot.svg" ));
-//    ui->actionDrivesHard2->setIcon(QIcon(
-//            g_pBoard->IsHardImageAttached(2) ? ":/images/iconHdd.svg" : ":/images/iconHddSlot.svg" ));
+//    ui->actionDrivesHard->setIcon(QIcon(
+//            g_pBoard->IsHardImageAttached() ? ":/images/iconHdd.svg" : ":/images/iconHddSlot.svg" ));
 
     ui->actionDebugConsoleView->setChecked(m_console->isVisible());
     ui->actionDebugDebugView->setChecked(m_dockDebug->isVisible());
@@ -421,6 +428,42 @@ void MainWindow::viewViewMode4()
     ui->centralWidget->setMaximumWidth(m_screen->maximumWidth());
 }
 
+void MainWindow::confRam512()
+{
+    changeConfiguration(Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK | 512);
+}
+void MainWindow::confRam1024()
+{
+    changeConfiguration(Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK | 1024);
+}
+void MainWindow::confRam2048()
+{
+    changeConfiguration(Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK | 2048);
+}
+void MainWindow::confRam4096()
+{
+    changeConfiguration(Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK | 4096);
+}
+
+void MainWindow::changeConfiguration(int configuration)
+{
+    int oldConf = Settings_GetConfiguration();
+    if (oldConf == configuration)
+        return;
+
+    // Ask user -- we have to reset machine to change configuration
+    if (!AlertOkCancel(tr("Reset required after configuration change.\nAre you agree?")))
+        return;
+
+    // Change configuration
+    Emulator_InitConfiguration((NeonConfiguration)configuration);
+
+    Settings_SetConfiguration(configuration);
+
+    updateMenu();
+    updateAllViews();
+}
+
 void MainWindow::emulatorFrame()
 {
     if (!g_okEmulatorRunning)
@@ -512,24 +555,14 @@ void MainWindow::detachFloppy(int slot)
     updateMenu();
 }
 
-void MainWindow::emulatorHardDrive1() { emulatorHardDrive(1); }
-void MainWindow::emulatorHardDrive2() { emulatorHardDrive(2); }
-void MainWindow::emulatorHardDrive(int slot)
+void MainWindow::emulatorHardDrive()
 {
-//    if (g_pBoard->IsHardImageAttached(slot))
+//    if (g_pBoard->IsHardImageAttached())
 //    {
-//        detachHardDrive(slot);
+//        detachHardDrive();
 //    }
 //    else
 //    {
-//        // Check if cartridge (HDD ROM image) already selected
-//        bool okCartLoaded = g_pBoard->IsROMCartridgeLoaded(slot);
-//        if (!okCartLoaded)
-//        {
-//            AlertWarning(tr("Please select HDD ROM image as cartridge first."));
-//            return;
-//        }
-
 //        // Select HDD disk image
 //        QFileDialog dlg;
 //        dlg.setNameFilter(tr("NEON HDD images (*.img)"));
@@ -537,36 +570,33 @@ void MainWindow::emulatorHardDrive(int slot)
 //            return;
 
 //        QString strFileName = dlg.selectedFiles().at(0);
-//        if (! attachHardDrive(slot, strFileName))
+//        if (! attachHardDrive(strFileName))
 //        {
 //            AlertWarning(tr("Failed to attach hard drive image."));
 //            return;
 //        }
 //    }
 }
-bool MainWindow::attachHardDrive(int slot, const QString & strFileName)
+bool MainWindow::attachHardDrive(const QString & strFileName)
 {
-//    if (!g_pBoard->IsROMCartridgeLoaded(slot))
-//        return false;
-
 //    QFileInfo fi(strFileName);
 //    QString strFullName(fi.canonicalFilePath());  // Get absolute file name
 
 //    LPCTSTR sFileName = qPrintable(strFullName);
-//    if (!g_pBoard->AttachHardImage(slot, sFileName))
+//    if (!g_pBoard->AttachHardImage(sFileName))
 //        return false;
 
-//    Settings_SetHardFilePath(slot, strFullName);
+//    Settings_SetHardFilePath(strFullName);
 
 //    updateMenu();
 
 //    return true;
     return false;
 }
-void MainWindow::detachHardDrive(int slot)
+void MainWindow::detachHardDrive()
 {
-//    g_pBoard->DetachHardImage(slot);
-//    Settings_SetHardFilePath(slot, nullptr);
+//    g_pBoard->DetachHardImage();
+//    Settings_SetHardFilePath(nullptr);
 }
 
 void MainWindow::debugConsoleView()

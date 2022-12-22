@@ -118,17 +118,18 @@ public slots:
     /// \brief Save screenshot to PNG file.
     void saveScreenshot(const QString& filename);
 
+    /// \brief Attach the floppy image file -- insert the disk.
+    /// \param filename Floppy drive image file name.
+    /// \param slot floppy slot 1..2
     bool attachFloppy(int slot, const QString& filename);
     /// \brief Detach the floppy image file -- remove the disk.
-    /// \param slot floppy slot 1..4
+    /// \param slot floppy slot 1..2
     void detachFloppy(int slot);
     /// \brief Attach the hard drive image file.
-    /// \param slot hard drive slot 1..2
     /// \param filename Hard drive image file name.
-    bool attachHard(int slot, const QString& filename);
+    bool attachHard(const QString& filename);
     /// \brief Detach the hard drive image file.
-    /// \param slot hard drive slot 1..2
-    void detachHard(int slot);
+    void detachHard();
 
     /// \brief Get CPU object.
     /// \return QEmulatorProcessor object.

@@ -48,6 +48,10 @@
     <addaction name="separator"/>
     <addaction name="actionSoundEnabled"/>
     <addaction name="separator"/>
+    <addaction name="actionConfRam512"/>
+    <addaction name="actionConfRam1024"/>
+    <addaction name="actionConfRam2048"/>
+    <addaction name="actionConfRam4096"/>
    </widget>
    <widget class="QMenu" name="menuDrives">
     <property name="title">
@@ -56,8 +60,7 @@
     <addaction name="actionDrivesFloppy0"/>
     <addaction name="actionDrivesFloppy1"/>
     <addaction name="separator"/>
-    <addaction name="actionDrivesHard1"/>
-    <addaction name="actionDrivesHard2"/>
+    <addaction name="actionDrivesHard"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -131,9 +134,7 @@
    <addaction name="actionDrivesFloppy0"/>
    <addaction name="actionDrivesFloppy1"/>
    <addaction name="separator"/>
-   <addaction name="actionDrivesHard1"/>
-   <addaction name="actionDrivesHard2"/>
-   <addaction name="separator"/>
+   <addaction name="actionDrivesHard"/>
    <addaction name="actionSoundEnabled"/>
    <addaction name="actionFileScreenshot"/>
   </widget>
@@ -204,7 +205,7 @@
     <string>1</string>
    </property>
   </action>
-  <action name="actionDrivesHard1">
+  <action name="actionDrivesHard">
    <property name="checkable">
     <bool>false</bool>
    </property>
@@ -213,25 +214,13 @@
      <normaloff>:/images/iconHddSlot.svg</normaloff>:/images/iconHddSlot.svg</iconset>
    </property>
    <property name="text">
-    <string>Hard Drive 1</string>
+    <string>Hard Drive</string>
    </property>
    <property name="iconText">
-    <string>1</string>
+    <string>HDD</string>
    </property>
-  </action>
-  <action name="actionDrivesHard2">
-   <property name="checkable">
+   <property name="visible">
     <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="QtNeonBtl.qrc">
-     <normaloff>:/images/iconHddSlot.svg</normaloff>:/images/iconHddSlot.svg</iconset>
-   </property>
-   <property name="text">
-    <string>Hard Drive 2</string>
-   </property>
-   <property name="iconText">
-    <string>2</string>
    </property>
   </action>
   <action name="actionFileScreenshot">
@@ -447,6 +436,38 @@
   <action name="actionDebugRemoveAllBreakpoints">
    <property name="text">
     <string>Remove All Breakpoints</string>
+   </property>
+  </action>
+  <action name="actionConfRam512">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>RAM 512 KB</string>
+   </property>
+  </action>
+  <action name="actionConfRam1024">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>RAM 1024 KB</string>
+   </property>
+  </action>
+  <action name="actionConfRam2048">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>RAM 2048 KB</string>
+   </property>
+  </action>
+  <action name="actionConfRam4096">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>RAM 4096 KB</string>
    </property>
   </action>
  </widget>

@@ -518,7 +518,7 @@ void QDebugMemoryMapCtrl::paintEvent(QPaintEvent * /*event*/)
     painter.drawRect(x1, y1, x2 - x1, y2 - y1);
 
     bool okHaltMode = pProc->IsHaltMode();
-    painter.drawText(x, y + cyLine, okHaltMode ? tr("HALT") : tr("USER"));
+    painter.drawText(x, y + cyLine, okHaltMode ? "HALT" : "USER");
 
     uint16_t portBaseAddr = pProc->IsHaltMode() ? 0161200 : 0161220;
     for (int i = 0; i < 8; i++)

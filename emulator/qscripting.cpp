@@ -99,24 +99,22 @@ void QEmulator::saveScreenshot(const QString &filename)
 
 bool QEmulator::attachFloppy(int slot, const QString & filename)
 {
-    if (slot < 0 || slot > 3) return false;
+    if (slot < 0 || slot > 1) return false;
     return Global_getMainWindow()->attachFloppy(slot, filename);
 }
 void QEmulator::detachFloppy(int slot)
 {
-    if (slot < 0 || slot > 3) return;
+    if (slot < 0 || slot > 1) return;
     Global_getMainWindow()->detachFloppy(slot);
 }
 
-bool QEmulator::attachHard(int slot, const QString &filename)
+bool QEmulator::attachHard(const QString &filename)
 {
-    if (slot < 1 || slot > 2) return false;
-    return Global_getMainWindow()->attachHardDrive(slot, filename);
+    return Global_getMainWindow()->attachHardDrive(filename);
 }
-void QEmulator::detachHard(int slot)
+void QEmulator::detachHard()
 {
-    if (slot < 1 || slot > 2) return;
-    Global_getMainWindow()->detachHardDrive(slot);
+    Global_getMainWindow()->detachHardDrive();
 }
 
 void QEmulator::keyScan(uchar neonscan, int timeout)
