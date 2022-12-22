@@ -495,6 +495,8 @@ QDebugMemoryMapCtrl::QDebugMemoryMapCtrl(QDebugView *debugView)
 
 void QDebugMemoryMapCtrl::paintEvent(QPaintEvent * /*event*/)
 {
+    const CProcessor* pProc = getProc();
+
     QColor colorBackground = palette().color(QPalette::Base);
     QPainter painter(this);
     painter.fillRect(0, 0, this->width(), this->height(), colorBackground);
@@ -512,27 +514,40 @@ void QDebugMemoryMapCtrl::paintEvent(QPaintEvent * /*event*/)
     int y2 = y1 + cyLine * 16;
     int xtype = x1 + cxChar * 3;
     int ybase = y + cyLine * 16;
-    painter.drawRect(x1, y1, x2 - x1, y2 - y1);
-    painter.drawText(x, ybase + 2, "000000");
 
-    for (int i = 1; i < 8; i++)
+    painter.drawRect(x1, y1, x2 - x1, y2 - y1);
+
+    bool okHaltMode = pProc->IsHaltMode();
+    painter.drawText(x, y + cyLine, okHaltMode ? tr("HALT") : tr("USER"));
+
+    uint16_t portBaseAddr = pProc->IsHaltMode() ? 0161200 : 0161220;
+    for (int i = 0; i < 8; i++)
     {
-        int ycur = y2 - cyLine * i * 2;
-        if (i < 7)
-            painter.drawLine(x1, ycur, x1 + 8, ycur);
-        else
-            painter.drawLine(x1, ycur, x2, ycur);
+        int yp = y2 - i * cyLine * 2;
+        painter.drawLine(x1, yp, x2, yp);
         quint16 addr = (quint16)i * 020000;
-        DrawOctalValue(painter, x, y2 - cyLine * i * 2 + cyLine / 3, addr);
+        DrawOctalValue(painter, x, yp + cyLine / 4, addr);
     }
 
-    painter.drawText(xtype, ybase - cyLine * 6 - cyLine / 3, "RAM12");
+    for (int i = 0; i < 7; i++)
+    {
+        int ytype = ybase - cyLine * i * 2 - cyLine / 3;
+        if (i < 2 && pProc->IsHaltMode())
+            painter.drawText(xtype, ytype, tr("ROM"));
+        else
+        {
+            uint16_t value = g_pBoard->GetPortView((uint16_t)(portBaseAddr + 2 * i));
+            TCHAR buffer[7];
+            PrintOctalValue(buffer, (value & 0037760) >> 4);
+            painter.drawText(xtype, ytype, buffer + 2);
+            if ((value & 4) != 0)
+                painter.drawText(xtype + cxChar * 5, ytype, tr("OFF"));
+            else
+                painter.drawText(xtype + cxChar * 5, ytype, tr("ON"));
+        }
+    }
 
-    int ytop = ybase - cyLine * 14 - cyLine / 3;
-    if (getProc()->IsHaltMode())
-        painter.drawText(xtype, ytop, "RAM12");
-    else
-        painter.drawText(xtype, ytop, "I/O");
+    painter.drawText(xtype, ybase - cyLine * 14 - cyLine / 3, tr("I/O"));
 }
 
 //////////////////////////////////////////////////////////////////////
