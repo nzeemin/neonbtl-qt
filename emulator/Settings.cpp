@@ -84,16 +84,6 @@ bool Settings_GetSound()
     return value.toBool();
 }
 
-void Settings_SetSoundAY(bool flag)
-{
-    Global_getSettings()->setValue("SoundAY", flag);
-}
-bool Settings_GetSoundAY()
-{
-    QVariant value = Global_getSettings()->value("SoundAY", false);
-    return value.toBool();
-}
-
 void Settings_SetDebugMemoryMode(quint16 mode)
 {
     Global_getSettings()->setValue("DebugMemoryMode", mode);

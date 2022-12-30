@@ -4,6 +4,7 @@
 TARGET = QtNeonBtl
 TEMPLATE = app
 SOURCES += main.cpp \
+    emubase/pit8253.cpp \
     mainwindow.cpp \
     Common.cpp \
     emubase/Processor.cpp \

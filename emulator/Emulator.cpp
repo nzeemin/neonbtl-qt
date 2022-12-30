@@ -102,7 +102,6 @@ bool Emulator_Init()
     g_sound = new QSoundOut();
     if (m_okEmulatorSound)
     {
-        //SoundGen_Initialize(Settings_GetSoundVolume());
         g_pBoard->SetSoundGenCallback(Emulator_FeedDAC);
     }
 
