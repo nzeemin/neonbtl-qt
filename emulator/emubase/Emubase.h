@@ -50,6 +50,8 @@ int Disasm_GetInstructionHint(
 //////////////////////////////////////////////////////////////////////
 // CFloppy
 
+class CMotherboard;
+
 #define FLOPPY_PHASE_CMD        1
 #define FLOPPY_PHASE_EXEC       2
 #define FLOPPY_PHASE_RESULT     3
@@ -86,37 +88,14 @@ int Disasm_GetInstructionHint(
 #define FLOPPY_MSR_DIO  0x40
 #define FLOPPY_MSR_RQM  0x80
 
-#define FLOPPY_CMD_CORRECTION250        04
-#define FLOPPY_CMD_ENGINESTART          020
-#define FLOPPY_CMD_CORRECTION500        010
-#define FLOPPY_CMD_SIDEUP               040
-#define FLOPPY_CMD_DIR                  0100
-#define FLOPPY_CMD_STEP                 0200
-#define FLOPPY_CMD_SEARCHSYNC           0400
-#define FLOPPY_CMD_SKIPSYNC             01000
-//dir == 0 to center (towards trk0)
-//dir == 1 from center (towards trk80)
-
-#define FLOPPY_STATUS_TRACK0                 01  // Track 0 flag
-#define FLOPPY_STATUS_RDY                  0200  // Ready status
-#define FLOPPY_STATUS_WRITEPROTECT           04  // Write protect
-#define FLOPPY_STATUS_MOREDATA             0200  // Need more data flag
-#define FLOPPY_STATUS_CHECKSUMOK         040000  // Checksum verified OK
-#define FLOPPY_STATUS_INDEXMARK         0100000  // Index flag, indicates the beginning of track
-
-#define FLOPPY_RAWTRACKSIZE             6250
-#define FLOPPY_RAWMARKERSIZE            (FLOPPY_RAWTRACKSIZE / 2)
-#define FLOPPY_INDEXLENGTH              30
-
 struct CFloppyDrive
 {
     FILE*    fpFile;
-    bool     okReadOnly;    // Write protection flag
+    uint8_t* data;          // Data image for the whole disk
     uint16_t dataptr;       // Data offset within m_data - "head" position
-    uint8_t  data[FLOPPY_RAWTRACKSIZE];  // Raw track image for the current track
-    uint8_t  marker[FLOPPY_RAWMARKERSIZE];  // Marker positions
     uint16_t datatrack;     // Track number of data in m_data array
     uint16_t dataside;      // Disk side of data in m_data array
+    bool     okReadOnly;    // Write protection flag
 
 public:
     CFloppyDrive();
@@ -127,6 +106,7 @@ public:
 class CFloppyController
 {
 protected:
+    CMotherboard* m_pBoard;
     CFloppyDrive m_drivedata[4];  // Floppy drives
     CFloppyDrive* m_pDrive; // Current drive; nullptr if not selected
     uint8_t  m_drive;       // Current drive number: 0 to 3; 0xff if not selected
@@ -140,22 +120,10 @@ protected:
     uint8_t  m_track;       // Track number: 0 to 79
     uint8_t  m_side;        // Disk side: 0 or 1
     bool     m_int;         // Interrupt flag
-    uint16_t m_flags;       // See FLOPPY_CMD_XXX defines
-    uint16_t m_datareg;     // Read mode data register
-    uint16_t m_writereg;    // Write mode data register
-    bool m_writeflag;       // Write mode data register has data
-    bool m_writemarker;     // Write marker in m_marker
-    uint16_t m_shiftreg;    // Write mode shift register
-    bool m_shiftflag;       // Write mode shift register has data
-    bool m_shiftmarker;     // Write marker in m_marker
-    bool m_writing;         // true = write mode, false = read mode
-    bool m_searchsync;      // Read sub-mode: true = search for sync, false = just read
-    bool m_crccalculus;     // true = CRC is calculated now
-    bool m_trackchanged;    // true = m_data was changed - need to save it into the file
-    bool m_okTrace;         // Trace mode on/off
+    bool     m_okTrace;     // Trace mode on/off
 
 public:
-    CFloppyController();
+    CFloppyController(CMotherboard* pBoard);
     ~CFloppyController();
     void Reset();           // Reset the device
 
@@ -168,16 +136,11 @@ public:
     bool IsAttached(int drive) const { return (m_drivedata[drive].fpFile != nullptr); }
     // Check if the drive's attached image is read-only
     bool IsReadOnly(int drive) const { return m_drivedata[drive].okReadOnly; }
-    // Check if floppy engine now rotates
-    bool IsEngineOn() { return (m_flags & FLOPPY_CMD_ENGINESTART) != 0; }
 public:
     uint8_t  GetState();        // Reading status
-    uint16_t GetData();         // Reading data
     uint16_t GetStateView() const { return m_state; }  // Get status value for debugger
-    uint16_t GetDataView() const { return m_datareg; }  // Get data buffer value for debugger
-    void FifoWrite(uint8_t cmd);  // Writing commands
+    void     FifoWrite(uint8_t cmd);  // Writing commands
     uint8_t  FifoRead();
-    void WriteData(uint16_t data);  // Writing data
     void Periodic();            // Rotate disk; call it each 64 us - 15625 times per second
     bool CheckInterrupt() const { return m_int; }
     void SetTrace(bool okTrace) { m_okTrace = okTrace; }  // Set trace mode on/off
@@ -186,7 +149,6 @@ private:
     uint8_t CheckCommand();
     void StartCommand(uint8_t cmd);
     void ExecuteCommand(uint8_t cmd);
-    void PrepareTrack();
     void FlushChanges();  // If current track was changed - save it
 };
 

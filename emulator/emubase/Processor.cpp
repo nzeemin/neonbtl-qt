@@ -18,74 +18,74 @@ NEONBTL. If not, see <http://www.gnu.org/licenses/>. */
 
 uint16_t MOV_TIMING[8][8] =
 {
-    {0x000B, 0x0022, 0x0022, 0x0033, 0x0022, 0x0037, 0x0033, 0x0043},
-    {0x0020, 0x0031, 0x0037, 0x0043, 0x003B, 0x0047, 0x0043, 0x0054},
-    {0x0020, 0x0037, 0x0037, 0x0043, 0x003B, 0x0047, 0x0043, 0x0053},
-    {0x0025, 0x0043, 0x0043, 0x004F, 0x0047, 0x0054, 0x004F, 0x0060},
-    {0x0020, 0x0037, 0x0037, 0x0043, 0x003B, 0x0047, 0x0043, 0x0053},
-    {0x0025, 0x0043, 0x0043, 0x004F, 0x0047, 0x0054, 0x004F, 0x0060},
-    {0x0029, 0x0039, 0x003F, 0x004C, 0x003F, 0x004C, 0x004B, 0x005C},
-    {0x0035, 0x0045, 0x004C, 0x0057, 0x004C, 0x0057, 0x0057, 0x0068}
+    {0x0008, 0x001F, 0x001F, 0x0030, 0x001F, 0x0034, 0x0030, 0x0040},
+    {0x001D, 0x002E, 0x0034, 0x0040, 0x0038, 0x0044, 0x0040, 0x0051},
+    {0x001D, 0x0034, 0x0034, 0x0040, 0x0038, 0x0043, 0x0040, 0x0050},
+    {0x0022, 0x0040, 0x0040, 0x004C, 0x0044, 0x0051, 0x004C, 0x005D},
+    {0x001D, 0x0034, 0x0034, 0x0040, 0x0038, 0x0044, 0x0040, 0x0050},
+    {0x0022, 0x0040, 0x0040, 0x004C, 0x0044, 0x0051, 0x004C, 0x005D},
+    {0x0026, 0x0036, 0x003C, 0x0049, 0x003C, 0x0049, 0x0048, 0x0059},
+    {0x0032, 0x0042, 0x0049, 0x0054, 0x0049, 0x0054, 0x0054, 0x0065}
 };
 
 uint16_t MOVB_TIMING[8][8] =
 {
-    {0x000B, 0x0025, 0x002B, 0x0037, 0x002F, 0x003B, 0x003B, 0x0047},
-    {0x0018, 0x0035, 0x003B, 0x0047, 0x003F, 0x004C, 0x004B, 0x0057},
-    {0x0019, 0x003B, 0x003B, 0x0047, 0x0040, 0x004B, 0x004C, 0x0057},
-    {0x0025, 0x0047, 0x0047, 0x0054, 0x004B, 0x0057, 0x0057, 0x0063},
-    {0x0019, 0x003B, 0x003B, 0x0047, 0x0040, 0x004B, 0x004C, 0x0057},
-    {0x0025, 0x0047, 0x0047, 0x0054, 0x004B, 0x0057, 0x0057, 0x0063},
-    {0x0029, 0x003D, 0x0043, 0x004F, 0x0043, 0x004F, 0x0054, 0x005F},
-    {0x0035, 0x0049, 0x004F, 0x005B, 0x004F, 0x005B, 0x005F, 0x006C}
+    {0x0008, 0x0022, 0x0028, 0x0034, 0x002C, 0x0038, 0x0038, 0x0044},
+    {0x0015, 0x0032, 0x0038, 0x0044, 0x003C, 0x0049, 0x0048, 0x0054},
+    {0x0016, 0x0038, 0x0038, 0x0044, 0x003D, 0x0048, 0x0049, 0x0054},
+    {0x0022, 0x0044, 0x0044, 0x0051, 0x0048, 0x0054, 0x0054, 0x0060},
+    {0x0016, 0x0038, 0x0038, 0x0043, 0x003D, 0x0048, 0x0049, 0x0054},
+    {0x0022, 0x0044, 0x0044, 0x0051, 0x0048, 0x0054, 0x0054, 0x0060},
+    {0x0026, 0x003A, 0x0040, 0x004C, 0x0040, 0x004C, 0x0051, 0x005C},
+    {0x0032, 0x0046, 0x004C, 0x0058, 0x004C, 0x0058, 0x005C, 0x0069}
 };
 
 uint16_t CMP_TIMING[8][8] =
 {
-    {0x000B, 0x001C, 0x001D, 0x0029, 0x0021, 0x002D, 0x0035, 0x0041},
-    {0x0018, 0x002D, 0x002D, 0x0039, 0x0031, 0x003D, 0x0045, 0x0051},
-    {0x0019, 0x002D, 0x002D, 0x0039, 0x0031, 0x003D, 0x0045, 0x0051},
-    {0x0025, 0x0039, 0x0039, 0x0045, 0x003D, 0x0049, 0x0051, 0x005E},
-    {0x0019, 0x002D, 0x002D, 0x0039, 0x0031, 0x003D, 0x0045, 0x0051},
-    {0x0025, 0x0039, 0x0039, 0x0045, 0x003D, 0x0049, 0x0051, 0x005E},
-    {0x0029, 0x0035, 0x0035, 0x0041, 0x0035, 0x0041, 0x004D, 0x005A},
-    {0x0035, 0x0041, 0x0041, 0x004E, 0x0041, 0x004E, 0x005A, 0x0065}
+    {0x0008, 0x0019, 0x001A, 0x0026, 0x001E, 0x002A, 0x0032, 0x003E},
+    {0x0015, 0x002A, 0x002A, 0x0036, 0x002E, 0x003A, 0x0042, 0x004E},
+    {0x0016, 0x002A, 0x002A, 0x0036, 0x002E, 0x003A, 0x0042, 0x004E},
+    {0x0022, 0x0036, 0x0036, 0x0042, 0x003A, 0x0046, 0x004E, 0x005B},
+    {0x0016, 0x002A, 0x002A, 0x0036, 0x002E, 0x003A, 0x0042, 0x004E},
+    {0x0022, 0x0036, 0x0036, 0x0042, 0x003A, 0x0046, 0x004E, 0x005B},
+    {0x0026, 0x0032, 0x0032, 0x003E, 0x0032, 0x003E, 0x004A, 0x0057},
+    {0x0032, 0x003E, 0x003E, 0x004B, 0x003E, 0x004B, 0x0057, 0x0062}
 };
 
 uint16_t CLR_TIMING[8] =
 {
-    0x000B, 0x001C, 0x0023, 0x002F, 0x0023, 0x002F, 0x002F, 0x003F
+    0x0008, 0x0019, 0x0020, 0x002C, 0x0020, 0x002C, 0x002C, 0x003C
 };
 
 uint16_t CLRB_TIMING[8] =
 {
-    0x000B, 0x0021, 0x0027, 0x0033, 0x0027, 0x0033, 0x0037, 0x0043
+    0x0008, 0x001E, 0x0024, 0x0030, 0x0024, 0x0030, 0x0034, 0x0040
 };
 
 uint16_t TST_TIMING[8] =
 {
-    0x000B, 0x0018, 0x0019, 0x0025, 0x0019, 0x0025, 0x0031, 0x003D
+    0x0008, 0x0015, 0x0016, 0x0022, 0x0016, 0x0022, 0x002E, 0x003A
 };
 
 uint16_t MTPS_TIMING[8] =
 {
-    0x0018, 0x0029, 0x0029, 0x0035, 0x0029, 0x0035, 0x0041, 0x004D
+    0x0015, 0x0026, 0x0026, 0x0032, 0x0026, 0x0032, 0x003E, 0x004A
 };
 
 uint16_t XOR_TIMING[8] =
 {
-    0x000B, 0x0025, 0x002B, 0x0037, 0x002F, 0x003B, 0x003B, 0x0047
+    0x0008, 0x0022, 0x0028, 0x0034, 0x002C, 0x0038, 0x0038, 0x0043
 };
 
 uint16_t ASH_TIMING[8] =
 {
-    0x0029, 0x003D, 0x003D, 0x0049, 0x0041, 0x004D, 0x0055, 0x0062
+    0x0026, 0x003A, 0x003A, 0x0046, 0x003E, 0x004A, 0x0052, 0x005F
 };
 uint16_t ASH_S_TIMING = 0x0008;
 
 uint16_t ASHC_TIMING[8] =
 {
-    0x0039, 0x004E, 0x004D, 0x005A, 0x0051, 0x005D, 0x0066, 0x0072
+    0x0036, 0x004B, 0x004A, 0x0057, 0x003E, 0x005A, 0x0063, 0x006F
 };
 uint16_t ASHC_S_TIMING = 0x0008;
 
@@ -96,30 +96,30 @@ uint16_t MUL_TIMING[8] =
 
 uint16_t DIV_TIMING[8] =
 {
-    0x0080, 0x00E8, 0x00E7, 0x00F4, 0x00EB, 0x00F8, 0x0100, 0x010D
+    0x0070, 0x00D8, 0x00D7, 0x00E4, 0x00DB, 0x00E8, 0x00F0, 0x00FD
 };
 
 uint16_t JMP_TIMING[7] =
 {
-    0x002D, 0x002D, 0x003D, 0x002D, 0x003D, 0x0031, 0x0041
+    0x002A, 0x002A, 0x003A, 0x002A, 0x003A, 0x002E, 0x003E
 };
 uint16_t JSR_TIMING[7] =
 {
-    0x0045, 0x0045, 0x0056, 0x0045, 0x0056, 0x0049, 0x0059
+    0x0042, 0x0042, 0x0053, 0x0042, 0x0053, 0x0046, 0x0056
 };
 
-uint16_t BRANCH_TRUE_TIMING = 0x0025;
-uint16_t BRANCH_FALSE_TIMING = 0x0010;
+uint16_t BRANCH_TRUE_TIMING = 0x0022;
+uint16_t BRANCH_FALSE_TIMING = 0x000D;
 uint16_t BPT_TIMING = 0x0094;
 uint16_t EMT_TIMING = 0x009C;
 uint16_t RTI_TIMING = 0x0059;
 uint16_t RTS_TIMING = 0x0031;
-uint16_t NOP_TIMING = 0x0010;
-uint16_t SOB_TIMING = 0x002D;
-uint16_t SOB_LAST_TIMING = 0x0019; //last iteration of SOB
-uint16_t BR_TIMING = 0x0025;
+uint16_t NOP_TIMING = 0x000D;
+uint16_t SOB_TIMING = 0x002A;
+uint16_t SOB_LAST_TIMING = 0x0016; //last iteration of SOB
+uint16_t BR_TIMING = 0x0022;
 uint16_t MARK_TIMING = 0x0041;
-uint16_t RESET_TIMING = 105 + 968;  // ТО КМ1801ВМ2 стр. 134
+uint16_t RESET_TIMING = 100 + 968;  // ТО КМ1801ВМ2 стр. 134
 
 
 //////////////////////////////////////////////////////////////////////
@@ -271,8 +271,8 @@ CProcessor::CProcessor(CMotherboard* pBoard)
     m_stepmode = false;
     m_buserror = false;
     m_STRTrq = m_RPLYrq = m_RSVDrq = m_TBITrq = m_ACLOrq = m_HALTrq = m_EVNTrq = false;
-    m_ILLGrq = m_FIS_rq = m_BPT_rq = m_IOT_rq = m_EMT_rq = m_TRAPrq = false;
-    m_haltpinreset = m_ACLOreset = m_EVNTreset = false; m_VIRQreset = 0;
+    m_ILLGrq = m_FIS_rq = m_BPT_rq = m_IOT_rq = m_EMT_rq = m_TRAPrq = m_VIRQrq = false;
+    m_ACLOreset = m_EVNTreset = false;
     m_DCLOpin = m_ACLOpin = true;
     m_haltpin = false;
 
@@ -280,7 +280,6 @@ CProcessor::CProcessor(CMotherboard* pBoard)
     m_regsrc = m_methsrc = 0;
     m_regdest = m_methdest = 0;
     m_addrsrc = m_addrdest = 0;
-    memset(m_virq, 0, sizeof(m_virq));
 }
 
 void CProcessor::Execute()
@@ -304,162 +303,159 @@ bool CProcessor::InterruptProcessing()
     bool intrMode = false;  // true = HALT mode interrupt, false = USER mode interrupt
 
     if (m_stepmode)
-        m_stepmode = false;
-    else
     {
-        m_haltpinreset = m_ACLOreset = m_EVNTreset = false; m_VIRQreset = 0;
-        m_TBITrq = (m_psw & 020) != 0;  // T-bit
-
-        if (m_STRTrq)
-        {
-            intrVector = 0; intrMode = true;
-            m_STRTrq = false;
-        }
-        else if (m_HALTrq)  // HALT command
-        {
-            intrVector = 0170;  intrMode = true;
-            m_HALTrq = false;
-        }
-        else if (m_BPT_rq)  // BPT command
-        {
-            intrVector = 0000014;  intrMode = false;
-            m_BPT_rq = false;
-        }
-        else if (m_IOT_rq)  // IOT command
-        {
-            intrVector = 0000020;  intrMode = false;
-            m_IOT_rq = false;
-        }
-        else if (m_EMT_rq)  // EMT command
-        {
-            intrVector = 0000030;  intrMode = false;
-            m_EMT_rq = false;
-        }
-        else if (m_TRAPrq)  // TRAP command
-        {
-            intrVector = 0000034;  intrMode = false;
-            m_TRAPrq = false;
-        }
-        else if (m_FIS_rq)  // FIS commands -- Floating point Instruction Set
-        {
-            intrVector = 0010;  intrMode = true;
-            m_FIS_rq = false;
-        }
-        else if (m_RPLYrq)  // Зависание, priority 1
-        {
-            if (m_buserror)
-            {
-                intrVector = 0174; intrMode = true;
-            }
-            else if (currMode)
-            {
-                intrVector = 0004;  intrMode = true;
-            }
-            else
-            {
-                intrVector = 0000004; intrMode = false;
-            }
-            m_buserror = true;
-            m_RPLYrq = false;
-        }
-        else if (m_ILLGrq)
-        {
-            intrVector = 000004;  intrMode = false;
-            m_ILLGrq = false;
-        }
-        else if (m_RSVDrq)  // Reserved command, priority 2
-        {
-            intrVector = 000010;  intrMode = false;
-            m_RSVDrq = false;
-        }
-        else if (m_TBITrq && (!m_waitmode))  // T-bit, priority 3
-        {
-            intrVector = 000014;  intrMode = false;
-            m_TBITrq = false;
-        }
-        else if (m_ACLOrq && (m_psw & 0600) != 0600)  // ACLO, priority 4
-        {
-            intrVector = 000024;  intrMode = false;
-            m_ACLOreset = true;
-        }
-        else if (m_haltpin && (m_psw & 0400) != 0400)  // HALT signal in USER mode, priority 5
-        {
-            intrVector = 0170;  intrMode = true;
-            m_haltpinreset = true;
-        }
-        else if (m_EVNTrq && (m_psw & 0200) != 0200)  // EVNT signal, priority 6
-        {
-            intrVector = 0000100;  intrMode = false;
-            m_EVNTreset = true;
-        }
-        else if ((m_psw & 0200) != 0200)  // VIRQ, priority 7
-        {
-            intrMode = false;
-            for (uint8_t irq = 1; irq <= 15; irq++)
-            {
-                if (m_virq[irq] != 0)
-                {
-                    intrVector = m_virq[irq];
-                    m_VIRQreset = irq;
-                    break;
-                }
-            }
-        }
-        if (intrVector != 0xFFFF)
-        {
-            if (m_internalTick == 0) m_internalTick = EMT_TIMING;  //ANYTHING UNKNOWN WILL CAUSE EXCEPTION (EMT)
-
-            m_waitmode = false;
-
-            if (intrMode)  // HALT mode interrupt
-            {
-                uint16_t selVector = m_pBoard->GetSelRegister() & 0x0ff00;
-                intrVector |= selVector;
-                DebugLogFormat(_T("CPU HALT INT vector=%06ho PC=%06ho PSW=%06ho\r\n"), intrVector, GetPC(), GetPSW());
-                // Save PC/PSW to CPC/CPSW
-                m_savepc = GetPC();
-                m_savepsw = GetPSW();
-                m_psw |= 0400;
-                SetHALT(true);
-                uint16_t new_pc = GetWord(intrVector);
-                uint16_t new_psw = GetWord(intrVector + 2);
-                if (!m_RPLYrq)
-                {
-                    if (m_haltpinreset) m_haltpin = false;
-                    SetPSW(new_psw);
-                    SetPC(new_pc);
-                }
-            }
-            else  // USER mode interrupt
-            {
-                DebugLogFormat(_T("CPU USER INT vector=%06ho PC=%06ho PSW=%06ho\r\n"), intrVector, GetPC(), GetPSW());
-                SetHALT(false);
-                // Save PC/PSW to stack
-                SetSP(GetSP() - 2);
-                SetWord(GetSP(), GetCPSW());
-                SetSP(GetSP() - 2);
-                if (!m_RPLYrq)
-                {
-                    SetWord(GetSP(), GetCPC());
-                    if (!m_RPLYrq)
-                    {
-                        if (m_ACLOreset) m_ACLOrq = false;
-                        if (m_EVNTreset) m_EVNTrq = false;
-                        if (m_VIRQreset) m_virq[m_VIRQreset] = 0;
-                        uint16_t new_pc = GetWord(intrVector);
-                        uint16_t new_psw = GetWord(intrVector + 2);
-                        if (!m_RPLYrq)
-                        {
-                            SetLPSW((uint8_t)(new_psw & 0xff));
-                            SetPC(new_pc);
-                        }
-                    }
-                }
-            }
-
-            return true;
-        }
+        m_stepmode = false;
+        return false;
     }
+
+    m_ACLOreset = m_EVNTreset = false;
+    m_TBITrq = (m_psw & 020) != 0;  // T-bit
+
+    if (m_STRTrq)
+    {
+        intrVector = 0; intrMode = true;
+        m_STRTrq = false;
+    }
+    else if (m_HALTrq)  // HALT command
+    {
+        intrVector = 0170;  intrMode = true;
+        m_HALTrq = false;
+    }
+    else if (m_BPT_rq)  // BPT command
+    {
+        intrVector = 0000014;  intrMode = false;
+        m_BPT_rq = false;
+    }
+    else if (m_IOT_rq)  // IOT command
+    {
+        intrVector = 0000020;  intrMode = false;
+        m_IOT_rq = false;
+    }
+    else if (m_EMT_rq)  // EMT command
+    {
+        intrVector = 0000030;  intrMode = false;
+        m_EMT_rq = false;
+    }
+    else if (m_TRAPrq)  // TRAP command
+    {
+        intrVector = 0000034;  intrMode = false;
+        m_TRAPrq = false;
+    }
+    else if (m_FIS_rq)  // FIS commands -- Floating point Instruction Set
+    {
+        intrVector = 0010;  intrMode = true;
+        m_FIS_rq = false;
+    }
+    else if (m_RPLYrq)  // Зависание, priority 1
+    {
+        if (m_buserror)
+        {
+            intrVector = 0174; intrMode = true;
+        }
+        else if (currMode)
+        {
+            intrVector = 0004;  intrMode = true;
+        }
+        else
+        {
+            intrVector = 0000004; intrMode = false;
+        }
+        m_buserror = true;
+        m_RPLYrq = false;
+    }
+    else if (m_ILLGrq)
+    {
+        intrVector = 000004;  intrMode = false;
+        m_ILLGrq = false;
+    }
+    else if (m_RSVDrq)  // Reserved command, priority 2
+    {
+        intrVector = 000010;  intrMode = false;
+        m_RSVDrq = false;
+    }
+    else if (m_TBITrq && (!m_waitmode))  // T-bit, priority 3
+    {
+        intrVector = 000014;  intrMode = false;
+        m_TBITrq = false;
+    }
+    else if (m_ACLOrq && (m_psw & 0600) != 0600)  // ACLO, priority 4
+    {
+        intrVector = 000024;  intrMode = false;
+        m_ACLOreset = true;
+    }
+    else if (m_haltpin && (m_psw & 0400) != 0400)  // HALT signal in USER mode, priority 5
+    {
+        intrVector = 0170;  intrMode = true;
+    }
+    else if (m_EVNTrq && (m_psw & 0200) != 0200)  // EVNT signal, priority 6
+    {
+        intrVector = 0000100;  intrMode = false;
+        m_EVNTreset = true;
+    }
+    else if (m_VIRQrq && (m_psw & 0200) != 0200)  // VIRQ, priority 7
+    {
+        //NOTE: Special case just for PK11/16
+
+        SetHALT(false);
+        SetSP(GetSP() - 2);
+        SetWord(GetSP(), GetCPSW());
+        SetSP(GetSP() - 2);
+        SetWord(GetSP(), GetCPC());
+        if (m_RPLYrq) return true;
+
+        m_internalTick += 54;
+
+        intrVector = 0000274;  intrMode = true;
+    }
+
+    if (intrVector != 0xFFFF)
+    {
+        m_internalTick += EMT_TIMING;  //ANYTHING UNKNOWN WILL CAUSE EXCEPTION (EMT)
+
+        m_waitmode = false;
+
+        if (intrMode)  // HALT mode interrupt
+        {
+            uint16_t selVector = m_pBoard->GetSelRegister() & 0x0ff00;
+            intrVector |= selVector;
+            // Save PC/PSW to CPC/CPSW
+            m_savepc = GetPC();
+            m_savepsw = GetPSW();
+            m_psw |= 0400;
+            SetHALT(true);
+            uint16_t new_pc = GetWord(intrVector);
+            uint16_t new_psw = GetWord(intrVector + 2);
+            if (m_RPLYrq) return true;
+
+            DebugLogFormat(_T("%06ho\tCPU HALT INT vector=%06ho PC=%06ho PSW=%06ho\r\n"), GetInstructionPC(), intrVector, new_pc, new_psw);
+            SetPSW(new_psw);
+            SetPC(new_pc);
+        }
+        else  // USER mode interrupt
+        {
+            SetHALT(false);
+            // Save PC/PSW to stack
+            SetSP(GetSP() - 2);
+            SetWord(GetSP(), GetCPSW());
+            SetSP(GetSP() - 2);
+            if (m_RPLYrq) return true;
+            SetWord(GetSP(), GetCPC());
+            if (m_RPLYrq) return true;
+
+            if (m_ACLOreset) m_ACLOrq = false;
+            if (m_EVNTreset) m_EVNTrq = false;
+            uint16_t new_pc = GetWord(intrVector);
+            uint16_t new_psw = GetWord(intrVector + 2);
+            if (m_RPLYrq) return true;
+
+            DebugLogFormat(_T("%06ho\tCPU USER INT vector=%06ho PC=%06ho PSW=%06ho\r\n"), GetInstructionPC(), intrVector, new_pc, new_psw);
+            SetLPSW((uint8_t)(new_psw & 0xff));
+            SetPC(new_pc);
+        }
+
+        return true;
+    }
+
     return false;
 }
 
@@ -498,9 +494,8 @@ void CProcessor::SetDCLOPin(bool value)
         m_waitmode = false;
         m_internalTick = 0;
         m_RPLYrq = m_RSVDrq = m_TBITrq = m_ACLOrq = m_HALTrq = m_EVNTrq = false;
-        m_ILLGrq = m_FIS_rq = m_BPT_rq = m_IOT_rq = m_EMT_rq = m_TRAPrq = false;
-        memset(m_virq, 0, sizeof(m_virq));
-        m_ACLOreset = m_EVNTreset = false; m_VIRQreset = 0;
+        m_ILLGrq = m_FIS_rq = m_BPT_rq = m_IOT_rq = m_EMT_rq = m_TRAPrq = m_VIRQrq = false;
+        m_ACLOreset = m_EVNTreset = false;
         m_pBoard->ResetDevices();
     }
 }
@@ -516,9 +511,8 @@ void CProcessor::SetACLOPin(bool value)
         m_waitmode = false;
         m_buserror = false;
         m_RPLYrq = m_RSVDrq = m_TBITrq = m_ACLOrq = m_HALTrq = m_EVNTrq = false;
-        m_ILLGrq = m_FIS_rq = m_BPT_rq = m_IOT_rq = m_EMT_rq = m_TRAPrq = false;
-        memset(m_virq, 0, sizeof(m_virq));
-        m_ACLOreset = m_EVNTreset = false; m_VIRQreset = 0;
+        m_ILLGrq = m_FIS_rq = m_BPT_rq = m_IOT_rq = m_EMT_rq = m_TRAPrq = m_VIRQrq = false;
+        m_ACLOreset = m_EVNTreset = false;
 
         // "Turn On" interrupt processing
         m_STRTrq = true;
@@ -563,7 +557,7 @@ void CProcessor::TranslateInstruction()
 
 void CProcessor::ExecuteUNKNOWN ()  // Нет такой инструкции - просто вызывается TRAP 10
 {
-//    DebugPrintFormat(_T(">>Invalid OPCODE = %06ho @ %06ho\r\n"), m_instruction, GetPC()-2);
+    DebugLogFormat(_T("%06ho\tCPU Unknown opcode %06ho\r\n"), GetInstructionPC(), m_instruction);
 
     m_RSVDrq = true;
 }
@@ -2524,9 +2518,7 @@ void CProcessor::ExecuteMARK ()  // MARK
 //   2   byte       Stopped flag: 1 - stopped, 0 - not stopped
 //   2   bytes      Internal tick count
 //   3   bytes      Flags
-//   1   byte       VIRQ reset request
-//   2   bytes      Reserved
-//  32   bytes      VIRQ vectors
+//  35   byte       Reserved
 
 void CProcessor::SaveToImage(uint8_t* pImage) const
 {
@@ -2565,10 +2557,9 @@ void CProcessor::SaveToImage(uint8_t* pImage) const
     flags2 |= (m_TRAPrq ?  16 : 0);
     flags2 |= (m_ACLOreset ? 32 : 0);
     flags2 |= (m_EVNTreset ? 64 : 0);
+    flags2 |= (m_VIRQrq ? 128 : 0);
     *pbImage++ = flags2;                            //   28     1   Flags
-    *pbImage++ = m_VIRQreset;                       //   29     1   VIRQ reset request
-    //                                              //   30     2   Reserved
-    memcpy(pImage + 32, m_virq, 2 * 16);            //   32    32   VIRQ vectors
+    //                                              //   29    35   Reserved
 }
 
 void CProcessor::LoadFromImage(const uint8_t* pImage)
@@ -2605,9 +2596,8 @@ void CProcessor::LoadFromImage(const uint8_t* pImage)
     m_TRAPrq    = ((flags2 & 16) != 0);
     m_ACLOreset = ((flags2 & 32) != 0);
     m_EVNTreset = ((flags2 & 64) != 0);
-    m_VIRQreset = *pbImage++;                       //   29     1   VIRQ reset request
-    //                                              //   30     2   Reserved
-    memcpy(m_virq, pImage + 32, 2 * 16);            //   32    32   VIRQ vectors
+    m_VIRQrq    = ((flags2 & 128) != 0);
+    //                                              //   29    35   Reserved
 }
 
 uint16_t CProcessor::GetWordAddr (uint8_t meth, uint8_t reg)

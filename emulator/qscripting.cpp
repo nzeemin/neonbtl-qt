@@ -119,22 +119,22 @@ void QEmulator::detachHard()
 
 void QEmulator::keyScan(uchar neonscan, int timeout)
 {
-    g_pBoard->KeyboardEvent(neonscan, true);
-    run(timeout);
-    g_pBoard->KeyboardEvent(neonscan, false);
-    run(3);
+//    g_pBoard->KeyboardEvent(neonscan, true);
+//    run(timeout);
+//    g_pBoard->KeyboardEvent(neonscan, false);
+//    run(3);
 }
 
 void QEmulator::keyScanShift(uchar neonscan, int timeout)
 {
-    g_pBoard->KeyboardEvent(0105, true);
-    run(2);
-    g_pBoard->KeyboardEvent(neonscan, true);
-    run(timeout);
-    g_pBoard->KeyboardEvent(neonscan, false);
-    run(2);
-    g_pBoard->KeyboardEvent(0105, false);
-    run(3);
+//    g_pBoard->KeyboardEvent(0105, true);
+//    run(2);
+//    g_pBoard->KeyboardEvent(neonscan, true);
+//    run(timeout);
+//    g_pBoard->KeyboardEvent(neonscan, false);
+//    run(2);
+//    g_pBoard->KeyboardEvent(0105, false);
+//    run(3);
 }
 
 const uchar arrChar2UkncScan[128] =

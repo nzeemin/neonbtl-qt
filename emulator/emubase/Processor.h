@@ -25,6 +25,7 @@ public:  // Constructor / initialization
     CProcessor(CMotherboard* pBoard);
     void        SetHALTPin(bool value) { m_haltpin = value; }
     bool        GetHALTPin() const { return m_haltpin; }
+    bool        GetVIRQPin() const { return m_VIRQrq; }
     void        SetDCLOPin(bool value);
     void        SetACLOPin(bool value);
     void        MemoryError();
@@ -73,11 +74,9 @@ protected:  // Interrupt processing
     bool        m_IOT_rq;           // IOT command interrupt pending
     bool        m_EMT_rq;           // EMT command interrupt pending
     bool        m_TRAPrq;           // TRAP command interrupt pending
-    uint16_t    m_virq[16];         // VIRQ vector
-    bool        m_haltpinreset;        // HALT interrupt request reset
+    bool        m_VIRQrq;           // VIRQ interrupt request
     bool        m_ACLOreset;        // Power fail interrupt request reset
     bool        m_EVNTreset;        // EVNT interrupt request reset
-    uint8_t     m_VIRQreset;        // VIRQ request reset for given device
 protected:
     CMotherboard* m_pBoard;
 
@@ -119,8 +118,7 @@ public:  // Processor state
 public:  // Processor control
     void        TickEVNT();  // EVNT signal
     // External interrupt via VIRQ signal
-    void        InterruptVIRQ(int que, uint16_t interrupt);
-    uint16_t    GetVIRQ(int que) { return m_virq[que]; }
+    void        SetVIRQ(bool value);
     // Execute one processor tick
     void        Execute();
     // Process pending interrupt requests
@@ -321,10 +319,9 @@ inline void CProcessor::SetHALT (bool bFlag)
     if (bFlag) m_psw |= PSW_HALT; else m_psw &= ~PSW_HALT;
 }
 
-inline void CProcessor::InterruptVIRQ(int que, uint16_t interrupt)
+inline void CProcessor::SetVIRQ(bool value)
 {
-    if (m_okStopped) return;  // Processor is stopped - nothing to do
-    m_virq[que] = interrupt;
+    m_VIRQrq = value;
 }
 
 // PSW bits calculations - implementation

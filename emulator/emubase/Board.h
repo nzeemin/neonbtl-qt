@@ -48,6 +48,7 @@ enum NeonConfiguration
 // Trace flags
 #define TRACE_NONE         0  // Turn off all tracing
 #define TRACE_FLOPPY    0100  // Trace floppies
+#define TRACE_CPU      01000  // Trace CPU instructions
 #define TRACE_ALL    0177777  // Trace all
 
 // PIC 8259A flags
@@ -65,6 +66,9 @@ typedef void (CALLBACK* SOUNDGENCALLBACK)(unsigned short L, unsigned short R);
 
 // Serial port output callback
 typedef void (CALLBACK* SERIALOUTCALLBACK)(uint8_t byte);
+
+// Parallel port output callback
+typedef void (CALLBACK* PARALLELOUTCALLBACK)(uint8_t byte);
 
 
 //////////////////////////////////////////////////////////////////////
@@ -106,22 +110,19 @@ class CMotherboard
 public:  // Construct / destruct
     CMotherboard();
     ~CMotherboard();
-
 private:  // Devices
+    uint16_t    m_Configuration;  // See NEON_COPT_Xxx flag constants
     CProcessor* m_pCPU;  // CPU device
     CFloppyController* m_pFloppyCtl;  // FDD control
-
 public:  // Getting devices
     CProcessor* GetCPU() { return m_pCPU; }
-
 private:  // Memory
-    uint16_t    m_Configuration;  // See NEON_COPT_Xxx flag constants
     uint8_t*    m_pROM;  // ROM, 16 KB
     uint8_t*    m_pRAM;  // RAM, 512..4096 KB
     uint16_t    m_HR[8];
     uint16_t    m_UR[8];
     uint32_t    m_nRamSizeBytes;  // Actual RAM size
-
+    uint8_t*    m_pHDbuff;  // HD buffers, 2K
 public:  // Memory access
     uint16_t    GetRAMWord(uint32_t offset) const;
     uint8_t     GetRAMByte(uint32_t offset) const;
@@ -130,7 +131,6 @@ public:  // Memory access
     uint16_t    GetROMWord(uint16_t offset) const;
     uint8_t     GetROMByte(uint16_t offset) const;
     uint32_t    GetRamSizeBytes() const { return m_nRamSizeBytes; }
-
 public:  // Debug
     void        DebugTicks();  // One Debug CPU tick -- use for debug step or debug breakpoint
     void        SetCPUBreakpoints(const uint16_t* bps) { m_CPUbps = bps; } // Set CPU breakpoint list
@@ -139,25 +139,24 @@ public:  // Debug
     void        LoadRAMBank(int bank, const void* buffer);
 public:  // System control
     void        SetConfiguration(uint16_t conf);
-    void        Reset();  // Reset computer
     void        LoadROM(const uint8_t* pBuffer);  // Load 16 KB ROM image from the buffer
+    void        Reset();  // Reset computer
     void        Tick50();           // Tick 50 Hz
     void        TimerTick();        // Timer Tick
     void        ResetDevices();     // INIT signal
-
-public:
     bool        SystemFrame();  // Do one frame -- use for normal run
-    void        KeyboardEvent(uint8_t scancode, bool okPressed);  // Key pressed or released
+    void        UpdateKeyboardMatrix(const uint8_t matrix[8]);
 public:  // Floppy
     bool        AttachFloppyImage(int slot, LPCTSTR sFileName);
     void        DetachFloppyImage(int slot);
     bool        IsFloppyImageAttached(int slot) const;
     bool        IsFloppyReadOnly(int slot) const;
-
+    // Fill the current HD buffer, to call from floppy controller only
+    bool        FillHDBuffer(const uint8_t* data);
 public:  // Callbacks
-    // Assign sound output callback function.
     void        SetSoundGenCallback(SOUNDGENCALLBACK callback);
     void        SetSerialOutCallback(SERIALOUTCALLBACK outcallback);
+    void        SetParallelOutCallback(PARALLELOUTCALLBACK outcallback);
 public:  // Memory
     // Read command for execution
     uint16_t GetWordExec(uint16_t address, bool okHaltMode) { return GetWord(address, okHaltMode, true); }
@@ -172,9 +171,10 @@ public:  // Memory
     // Write byte
     void SetByte(uint16_t address, bool okHaltMode, uint8_t byte);
     // Read word from memory for video renderer and debugger
-    uint8_t GetRAMByteView(uint32_t address) const;
-    uint16_t GetRAMWordView(uint32_t address) const;
+    uint8_t GetRAMByteView(uint32_t offset) const;
+    uint16_t GetRAMWordView(uint32_t offset) const;
     uint16_t GetWordView(uint16_t address, bool okHaltMode, bool okExec, int* pAddrType) const;
+    uint32_t GetRAMFullAddress(uint16_t address, bool okHaltMode) const;
     // Read word from port for debugger
     uint16_t GetPortView(uint16_t address) const;
     // Read SEL register
@@ -193,38 +193,40 @@ private:  // Access to I/O ports
 public:  // Saving/loading emulator status
     void        SaveToImage(uint8_t* pImage);
     void        LoadFromImage(const uint8_t* pImage);
-private:  // Ports: implementation
+private:  // Ports/devices: implementation
     uint16_t    m_PICflags;         // PIC 8259A flags, see PIC_Xxx constants
     uint8_t     m_PICRR;            // PIC interrupt request register
     uint8_t     m_PICMR;            // PIC mask register
-    uint16_t    m_PortPPIB;         // 161032 Printer data - bits 0..7
-    uint16_t    m_PortPPIC;         // 161034
-    uint16_t    m_Port177560;       // Serial port input state register
-    uint16_t    m_Port177562;       // Serial port input data register
-    uint16_t    m_Port177564;       // Serial port output state register
-    uint16_t    m_Port177566;       // Serial port output data register
-    uint16_t    m_PortKBDCSR;       // Keyboard status register
-    uint16_t    m_PortKBDBUF;       // Keyboard register
+    uint16_t    m_PPIA;
+    uint16_t    m_PPIB;             // 161032 Printer data - bits 0..7
+    uint16_t    m_PPIC;             // 161034
+    uint16_t    m_hdsdh;
+    bool        m_hdint;            // HDD interrupt flag
+    uint8_t     m_nHDbuff;          // Index of the current HD buffer, 0..3
+    uint16_t    m_nHDbuffpos;       // Current position in the current HD buffer, 0..511
+    uint8_t     m_keymatrix[8];     // Keyboard matrix
+    uint16_t    m_keypos;           // Keyboard reading position 0..7
+    bool        m_keyint;           // Keyboard interrupt flag
+    PIT8253     m_snd, m_snl;
+    uint8_t     m_rtcalarmsec, m_rtcalarmmin, m_rtcalarmhour;
+    uint8_t     m_rtcmemory[50];
 private:
     void        ProcessPICWrite(bool a, uint8_t byte);
     uint8_t     ProcessPICRead(bool a);
-    void        SetPICInterrupt(int signal);  // Set PIC interrupt signal 0..7
+    void        SetPICInterrupt(int signal, bool set = true);  // Set/reset PIC interrupt signal 0..7
+    void        UpdateInterrupts();
     uint8_t     ProcessRtcRead(uint16_t address) const;
     void        ProcessTimerWrite(uint16_t address, uint8_t byte);
     uint8_t     ProcessTimerRead(uint16_t address);
-private:  // Timer implementation
-    PIT8253     m_snd, m_snl;
-    uint8_t     m_timeralarmsec, m_timeralarmmin, m_timeralarmhour;
-    uint8_t     m_timermemory[50];
+    void        ProcessKeyboardWrite(uint8_t byte);
+    void        DoSound();
 private:
     const uint16_t* m_CPUbps;  // CPU breakpoint list, ends with 177777 value
     uint32_t    m_dwTrace;  // Trace flags
 private:
     SOUNDGENCALLBACK m_SoundGenCallback;
     SERIALOUTCALLBACK m_SerialOutCallback;
-private:
-    void        DoSound();
-
+    PARALLELOUTCALLBACK m_ParallelOutCallback;
 };
 
 
