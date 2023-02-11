@@ -430,19 +430,19 @@ void MainWindow::viewViewMode4()
 
 void MainWindow::confRam512()
 {
-    changeConfiguration(Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK | 512);
+    changeConfiguration((Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK) | 512);
 }
 void MainWindow::confRam1024()
 {
-    changeConfiguration(Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK | 1024);
+    changeConfiguration((Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK) | 1024);
 }
 void MainWindow::confRam2048()
 {
-    changeConfiguration(Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK | 2048);
+    changeConfiguration((Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK) | 2048);
 }
 void MainWindow::confRam4096()
 {
-    changeConfiguration(Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK | 4096);
+    changeConfiguration((Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK) | 4096);
 }
 
 void MainWindow::changeConfiguration(int configuration)
@@ -577,7 +577,7 @@ void MainWindow::emulatorHardDrive()
 //        }
 //    }
 }
-bool MainWindow::attachHardDrive(const QString & strFileName)
+bool MainWindow::attachHardDrive(const QString & /*strFileName*/)
 {
 //    QFileInfo fi(strFileName);
 //    QString strFullName(fi.canonicalFilePath());  // Get absolute file name

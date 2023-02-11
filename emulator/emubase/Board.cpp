@@ -30,6 +30,7 @@ CMotherboard::CMotherboard()
     // Create devices
     m_pCPU = new CProcessor(this);
     m_pFloppyCtl = new CFloppyController(this);
+    m_pHardDrive = nullptr;
 
     m_dwTrace = 0;
     m_SoundGenCallback = nullptr;
@@ -45,13 +46,14 @@ CMotherboard::CMotherboard()
     m_pROM = static_cast<uint8_t*>(::calloc(16 * 1024, 1));
     m_pHDbuff = static_cast<uint8_t*>(::calloc(4 * 512, 1));
 
-    m_PPIA = 0;
+    m_PPIAwr = m_PPIArd = 0;
     m_PPIB = 11;  // IHLT EF1 EF0 - инверсные
     m_PPIC = 14;  // IHLT VIRQ - инверсные
     m_hdsdh = 0;
 
     m_nHDbuff = 0;
     m_nHDbuffpos = 0;
+    m_HDbuffdir = false;
     m_hdint = false;
 
     m_PICRR = m_PICMR = 0;
@@ -64,6 +66,7 @@ CMotherboard::CMotherboard()
     ::memset(m_keymatrix, 0, sizeof(m_keymatrix));
     m_keyint = false;
     m_keypos = 0;
+    m_mousest = m_mousedx = m_mousedy = 0;
 
     SetConfiguration(0);  // Default configuration
 
@@ -79,6 +82,7 @@ CMotherboard::~CMotherboard()
     // Delete devices
     delete m_pCPU;
     delete m_pFloppyCtl;
+    delete m_pHardDrive;
 
     // Free memory
     ::free(m_pRAM);
@@ -113,12 +117,18 @@ void CMotherboard::SetConfiguration(uint16_t conf)
     //}
 }
 
+void CMotherboard::SetTrace(uint32_t dwTrace)
+{
+    m_dwTrace = dwTrace;
+    m_pFloppyCtl->SetTrace((dwTrace & TRACE_FLOPPY) != 0);
+}
+
 void CMotherboard::Reset()
 {
     m_pCPU->SetDCLOPin(true);
     m_pCPU->SetACLOPin(true);
 
-    m_PPIA = 0;
+    m_PPIAwr = m_PPIArd = 0;
     m_PPIB = 11;  // IHLT EF1 EF0 - инверсные
     m_PPIC = 14;  // IHLT VIRQ - инверсные
     m_hdsdh = 0;
@@ -167,6 +177,11 @@ bool CMotherboard::IsFloppyReadOnly(int slot) const
     return m_pFloppyCtl->IsReadOnly(slot);
 }
 
+bool CMotherboard::IsFloppyEngineOn() const
+{
+    return m_pFloppyCtl->IsEngineOn();
+}
+
 bool CMotherboard::AttachFloppyImage(int slot, LPCTSTR sFileName)
 {
     ASSERT(slot >= 0 && slot < 2);
@@ -197,6 +212,64 @@ bool CMotherboard::FillHDBuffer(const uint8_t* data)
 
     m_nHDbuff++;
     return true;
+}
+
+const uint8_t* CMotherboard::GetHDBuffer()
+{
+    if (m_hdscnt == 0)
+        return nullptr;  // Nothing to write
+
+    m_hdscnt--;
+    const uint8_t* pBuffer = m_pHDbuff + (3 - (m_hdscnt & 3)) * 512;
+    return pBuffer;
+}
+
+
+// IDE Hard Drive ////////////////////////////////////////////////////
+
+bool CMotherboard::IsHardImageAttached() const
+{
+    return (m_pHardDrive != nullptr);
+}
+
+bool CMotherboard::IsHardImageReadOnly() const
+{
+    CHardDrive* pHardDrive = m_pHardDrive;
+    if (pHardDrive == nullptr) return false;
+    return pHardDrive->IsReadOnly();
+}
+
+bool CMotherboard::AttachHardImage(LPCTSTR sFileName)
+{
+    m_pHardDrive = new CHardDrive();
+    bool success = m_pHardDrive->AttachImage(sFileName);
+    if (success)
+    {
+        m_pHardDrive->Reset();
+    }
+
+    return success;
+}
+void CMotherboard::DetachHardImage()
+{
+    delete m_pHardDrive;
+    m_pHardDrive = nullptr;
+}
+
+uint16_t CMotherboard::GetHardPortWord(uint16_t port)
+{
+    if (m_pHardDrive == nullptr) return 0;
+    port = (uint16_t)((port >> 1) & 7) | 0x1f0;
+    uint16_t data = m_pHardDrive->ReadPort(port);
+    DebugLogFormat(_T("%c%06ho\tIDE GET %03hx -> 0x%04hx\n"), HU_INSTRUCTION_PC, port, data);
+    return data;
+}
+void CMotherboard::SetHardPortWord(uint16_t port, uint16_t data)
+{
+    if (m_pHardDrive == nullptr) return;
+    port = (uint16_t)((port >> 1) & 7) | 0x1f0;
+    DebugLogFormat(_T("%c%06ho\tIDE SET 0x%04hx -> %03hx\n"), HU_INSTRUCTION_PC, data, port);
+    m_pHardDrive->WritePort(port, data);
 }
 
 
@@ -240,6 +313,9 @@ void CMotherboard::ResetDevices()
     DebugLogFormat(_T("%c%06ho\tRESET\n"), HU_INSTRUCTION_PC);
 
     m_pFloppyCtl->Reset();
+
+    if (m_pHardDrive != nullptr)
+        m_pHardDrive->Reset();
 
     // Reset PIC 8259A
     //m_PICRR = m_PICMR = 0;
@@ -322,6 +398,43 @@ void CMotherboard::UpdateKeyboardMatrix(const uint8_t matrix[8])
         m_keyint = true;
 }
 
+void CMotherboard::ProcessMouseWrite(uint8_t byte)
+{
+    m_PPIC = m_PPIC & 0x0f;
+    if ((byte & 0x80) == 0)
+        m_mousest = 0;
+    else
+        switch (m_mousest)
+        {
+        case 0:
+            m_PPIC |= m_mousedx & 0xf0;
+            m_mousest++;
+            break;
+        case 1:
+            m_PPIC |= (m_mousedx << 4) & 0xf0;
+            m_mousedx = 0;
+            m_mousest++;
+            break;
+        case 2:
+            m_PPIC |= m_mousedy & 0xf0;
+            m_mousest++;
+            break;
+        case 3:
+            m_PPIC |= (m_mousedy << 4) & 0xf0;
+            m_mousest++;
+            m_mousedy = 0;
+            break;
+        }
+}
+
+void CMotherboard::MouseMove(short dx, short dy, bool btnLeft, bool btnRight)
+{
+    m_mousedx = (signed char)(-dx);
+    m_mousedy = (signed char)(-dy);
+
+    m_PPIArd = (m_PPIArd & ~0xe0) | (btnLeft ? 0 : 0x20) | (btnRight ? 0 : 0x40);
+}
+
 void CMotherboard::DebugTicks()
 {
     m_pCPU->ClearInternalTick();
@@ -382,6 +495,9 @@ bool CMotherboard::SystemFrame()
         if (frameticks % 32 == 0)  // FDD tick
             m_pFloppyCtl->Periodic();
 
+        if (m_pHardDrive != nullptr)
+            m_pHardDrive->Periodic();
+
         soundBrasErr += soundSamplesPerFrame;
         if (2 * soundBrasErr >= 20000)
         {
@@ -417,8 +533,6 @@ uint16_t CMotherboard::GetRAMWordView(uint32_t offset) const
 }
 uint16_t CMotherboard::GetWordView(uint16_t address, bool okHaltMode, bool okExec, int* pAddrType) const
 {
-    address &= ~1;
-
     uint32_t offset;
     int addrtype = TranslateAddress(address, okHaltMode, okExec, &offset);
 
@@ -427,13 +541,13 @@ uint16_t CMotherboard::GetWordView(uint16_t address, bool okHaltMode, bool okExe
     switch (addrtype)
     {
     case ADDRTYPE_RAM:
-        return GetRAMWord(offset);
+        return GetRAMWord(offset & ~1);
     case ADDRTYPE_ROM:
-        return GetROMWord(LOWORD(offset));
+        return GetROMWord(offset & 0xfffe);
     case ADDRTYPE_IO:
         return 0;  // I/O port, not memory
     case ADDRTYPE_EMUL:
-        return GetRAMWord(offset & 07777);  // I/O port emulation
+        return GetRAMWord(offset & 07776);  // I/O port emulation
     case ADDRTYPE_DENY:
         return 0;  // This memory is inaccessible for reading
     }
@@ -452,8 +566,6 @@ uint32_t CMotherboard::GetRAMFullAddress(uint16_t address, bool okHaltMode) cons
 
 uint16_t CMotherboard::GetWord(uint16_t address, bool okHaltMode, bool okExec)
 {
-    address &= ~1;
-
     uint32_t offset;
     int addrtype = TranslateAddress(address, okHaltMode, okExec, &offset);
     uint16_t res;
@@ -461,9 +573,9 @@ uint16_t CMotherboard::GetWord(uint16_t address, bool okHaltMode, bool okExec)
     switch (addrtype)
     {
     case ADDRTYPE_RAM:
-        return GetRAMWord(offset);
+        return GetRAMWord(offset & ~1);
     case ADDRTYPE_ROM:
-        return GetROMWord(LOWORD(offset));
+        return GetROMWord(offset & 0xfffe);
     case ADDRTYPE_IO:
         //TODO: What to do if okExec == true ?
         return GetPortWord(address);
@@ -474,7 +586,7 @@ uint16_t CMotherboard::GetWord(uint16_t address, bool okHaltMode, bool okExec)
             m_HR[1] = address;
         m_PPIB &= ~1;  // set EF0 active
         m_pCPU->SetHALTPin(true);
-        res = GetRAMWord(offset & 07777);
+        res = GetRAMWord(offset & 07776);
         DebugLogFormat(_T("%c%06ho\tGETWORD %06ho EMUL -> %06ho\n"), HU_INSTRUCTION_PC, address, res);
         return res;
     case ADDRTYPE_DENY:
@@ -498,7 +610,7 @@ uint8_t CMotherboard::GetByte(uint16_t address, bool okHaltMode)
     case ADDRTYPE_RAM:
         return GetRAMByte(offset);
     case ADDRTYPE_ROM:
-        return GetROMByte(LOWORD(offset));
+        return GetROMByte(offset & 0xffff);
     case ADDRTYPE_IO:
         //TODO: What to do if okExec == true ?
         return GetPortByte(address);
@@ -684,8 +796,8 @@ uint16_t CMotherboard::GetPortWord(uint16_t address)
         DebugLogFormat(_T("%c%06ho\tGETPORT SNL -> 0x%02hx\n"), HU_INSTRUCTION_PC, (uint16_t)resb);
         return resb;
 
-    case 0161030:  // PPIA -- Parallel port
-        result = 0;//TODO
+    case 0161030:  // PPIA
+        result = m_PPIArd;
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho PPIA -> %06ho\n"), HU_INSTRUCTION_PC, address, result);
         return result;
 
@@ -699,35 +811,42 @@ uint16_t CMotherboard::GetPortWord(uint16_t address)
         return m_PPIC;
 
     case 0161040:
-        result = m_pHDbuff[m_nHDbuff * 512 + m_nHDbuffpos % 512];
-        DebugLogFormat(_T("%c%06ho\tGETPORT %06ho HD.BUFF -> 0x%02hx buf%d %03x\n"), HU_INSTRUCTION_PC, address, result, m_nHDbuff, m_nHDbuffpos);
-        m_nHDbuffpos++;
-        if (m_nHDbuffpos >= 512)
+        if (m_HDbuffdir)  // Buffer in write mode
+            result = 0;
+        else
         {
-            m_nHDbuffpos = 0;
-            m_nHDbuff = (m_nHDbuff + 1) & 3;
+            result = m_pHDbuff[m_nHDbuff * 512 + m_nHDbuffpos % 512];
+            m_nHDbuffpos++;
+            if (m_nHDbuffpos >= 512)
+            {
+                m_nHDbuffpos = 0;
+                m_nHDbuff = (m_nHDbuff + 1) & 3;
+            }
         }
+        DebugLogFormat(_T("%c%06ho\tGETPORT %06ho HD.BUFF -> 0x%02hx buf%d %03x %s\n"), HU_INSTRUCTION_PC, address, result, m_nHDbuff, m_nHDbuffpos, m_HDbuffdir ? _T("wr") : _T("rd"));
         return result;
     case 0161042:
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho HD.ERR\n"), HU_INSTRUCTION_PC, address);
         return 0xff;
     case 0161044:
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho HD.SCNT\n"), HU_INSTRUCTION_PC, address);
-        return 0;
+        return m_hdscnt;
     case 0161046:
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho HD.SNUM\n"), HU_INSTRUCTION_PC, address);
-        return 0;
+        return m_hdsnum;
     case 0161050:
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho HD.CNLO\n"), HU_INSTRUCTION_PC, address);
-        return 0;
+        return m_hdcnum & 0xff;
     case 0161052:
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho HD.CNHI\n"), HU_INSTRUCTION_PC, address);
-        return 0;
-    case 0161054:
+        return m_hdcnum >> 8;
+    case 0161054:  // HD.SDH
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho HD.SDH\n"), HU_INSTRUCTION_PC, address);
-        return 0;
-    case 0161056:
+        m_HDbuffdir = true;  // Обращение к HD.SDH переводит буфер в режим записи
+        return m_hdsdh;
+    case 0161056:  // HD.CSR
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho HD.CSR\n"), HU_INSTRUCTION_PC, address);
+        m_HDbuffdir = false;  // Обращение к HD.CSR переводит буфер в режим чтения
         m_hdint = false;
         return 0x41;
 
@@ -747,20 +866,25 @@ uint16_t CMotherboard::GetPortWord(uint16_t address)
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho KBDBUF\n"), HU_INSTRUCTION_PC, address);
         return 0;
 
-    case 0161070:
+    case 0161070:  // FD.CSR
         resb = m_pFloppyCtl->GetState();
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho FD.CSR -> 0x%02hx\n"), HU_INSTRUCTION_PC, address, (uint16_t)resb);
         return resb;
-    case 0161072:
+    case 0161072:  // FD.BUF
         if ((m_hdsdh & 010) == 0)
             resb = m_pFloppyCtl->FifoRead();
         else
             resb = 0;
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho FD.BUF -> 0x%02hx\n"), HU_INSTRUCTION_PC, address, (uint16_t)resb);
         return resb;
-    case 0161076:
+    case 0161076:  // FD.CNT
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho FD.CNT\n"), HU_INSTRUCTION_PC, address);
         return 0;
+
+    case 0161120: case 0161122: case 0161124: case 0161126: case 0161130: case 0161132: case 0161134: case 0161136:
+        result = GetHardPortWord(address);
+        //DebugLogFormat(_T("%c%06ho\tGETPORT %06ho IDE %03hx -> 0x%04hx\n"), HU_INSTRUCTION_PC, address, (uint16_t)((address >> 1) & 7) | 0x1f0, result);
+        return result;
 
     case 0161200:
     case 0161202:
@@ -942,7 +1066,8 @@ void CMotherboard::SetPortWord(uint16_t address, uint16_t word)
     case 0161030:  // PPIA
         PrintBinaryValue(buffer, word);
         DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) PPIA %s\n"), HU_INSTRUCTION_PC, word, address, buffer + 12);
-        m_PPIA = word;
+        m_PPIAwr = word & 0xff;
+        ProcessMouseWrite(word & 0x00f0);
         break;
     case 0161032:  // PPIB
         DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) PPIB\n"), HU_INSTRUCTION_PC, word, address);
@@ -960,31 +1085,48 @@ void CMotherboard::SetPortWord(uint16_t address, uint16_t word)
         DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) PPIP\n"), HU_INSTRUCTION_PC, word, address);
         break;
 
-    case 0161040:
-        DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) HD.BUFF\n"), HU_INSTRUCTION_PC, word, address);
+    case 0161040:  // HD.BUFF
+        DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) HD.BUFF buf%d %03x %s\n"), HU_INSTRUCTION_PC, word, address, m_nHDbuff, m_nHDbuffpos, m_HDbuffdir ? _T("wr") : _T("rd"));
+        if (m_HDbuffdir)  // Buffer in write mode
+        {
+            m_pHDbuff[m_nHDbuff * 512 + m_nHDbuffpos % 512] = word & 0xff;
+            m_nHDbuffpos++;
+            if (m_nHDbuffpos >= 512)
+            {
+                m_nHDbuffpos = 0;
+                m_nHDbuff = (m_nHDbuff + 1) & 3;
+            }
+        }
         break;
-    case 0161042:
+    case 0161042:  // HD.ERR
         DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) HD.ERR\n"), HU_INSTRUCTION_PC, word, address);
         break;
-    case 0161044:
+    case 0161044:  // HD.SCNT
         DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) HD.SCNT\n"), HU_INSTRUCTION_PC, word, address);
+        m_hdscnt = word & 0xff;
         break;
     case 0161046:
-        DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) HD.CNUM\n"), HU_INSTRUCTION_PC, word, address);
+        DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) HD.SNUM\n"), HU_INSTRUCTION_PC, word, address);
+        m_hdsnum = word & 0xff;
         break;
     case 0161050:
         DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) HD.CNLO\n"), HU_INSTRUCTION_PC, word, address);
+        m_hdcnum = (m_hdcnum & 0xff00) | (word & 0xff);
         break;
     case 0161052:
         DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) HD.CNHI\n"), HU_INSTRUCTION_PC, word, address);
+        m_hdcnum = (uint16_t)((m_hdcnum & 0x00ff) | ((word & 0xff) << 8));
         break;
-    case 0161054:
+    case 0161054:  // HD.SDH
         DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) HD.SDH\n"), HU_INSTRUCTION_PC, word, address);
+        m_HDbuffdir = true;  // Обращение к HD.SDH переводит буфер в режим записи
         m_hdsdh = word;
-        //if ((m_PortHDsdh & 010) == 0)
+        if ((m_hdsdh & 010) == 0)
+            m_pFloppyCtl->SetParams(m_hdsdh & 1, (m_hdsdh >> 1) & 1, (m_hdsdh >> 2) & 1, (m_hdsdh >> 4) & 1);
         break;
-    case 0161056:
+    case 0161056:  // HD.CSR
         DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) HD.CSR\n"), HU_INSTRUCTION_PC, word, address);
+        m_HDbuffdir = false;  // Обращение к HD.CSR переводит буфер в режим чтения
         //NOTE: Контроллер винчестера не реализован, но он должен отдать сигнал на прерывание в ответ на команду RESTORE
         if (word == 020)  // RESTORE
             m_hdint = true;
@@ -1020,6 +1162,11 @@ void CMotherboard::SetPortWord(uint16_t address, uint16_t word)
             m_pFloppyCtl->Reset();
         break;
 
+    case 0161120: case 0161122: case 0161124: case 0161126: case 0161130: case 0161132: case 0161134: case 0161136:
+        //DebugLogFormat(_T("%c%06ho\tSETPORT %06ho %03hx -> (%06ho) IDE\n"), HU_INSTRUCTION_PC, word, (uint16_t)((address >> 1) & 7) | 0x1f0, address);
+        SetHardPortWord(address, word);
+        break;
+
     case 0161200: case 0161202: case 0161204: case 0161206:
     case 0161210: case 0161212: case 0161214: case 0161216:
         {
@@ -1051,6 +1198,7 @@ void CMotherboard::SetPortWord(uint16_t address, uint16_t word)
     case 0161460: case 0161461: case 0161462: case 0161463: case 0161464: case 0161465: case 0161466: case 0161467:
     case 0161470: case 0161471: case 0161472: case 0161473: case 0161474: case 0161475: case 0161476: case 0161477:
         DebugLogFormat(_T("%c%06ho\tSETPORT RTC %06ho -> (%06ho)\n"), HU_INSTRUCTION_PC, word, address);
+        ProcessRtcWrite(address, word & 0xff);
         break;
 
     default:
@@ -1183,17 +1331,25 @@ uint8_t CMotherboard::ProcessRtcRead(uint16_t address) const
         return (uint8_t)lnow->tm_hour;
     case 5:  // Hours alarm
         return m_rtcalarmhour;
-    case 6:  // Day of week
-        return (uint8_t)(lnow->tm_wday + 1);  // 1..7 - Вс..Сб
+    case 6:  // Day of week 1..7 Su..Sa
+        return (uint8_t)(lnow->tm_wday + 1);
     case 7:  // Day of month 1..31
         return (uint8_t)lnow->tm_mday;
     case 8:  // Month 1..12
-        return (uint8_t)lnow->tm_mon;
+        return (uint8_t)(lnow->tm_mon + 1);
     case 9:  // Year 0..99
         return (uint8_t)(lnow->tm_year % 100);
     default:
         return 0;
     }
+}
+
+void CMotherboard::ProcessRtcWrite(uint16_t address, uint8_t byte)
+{
+    address = address & 0377;
+
+    if (address >= 14 && address < 64)
+        m_rtcmemory[address - 14] = byte;
 }
 
 

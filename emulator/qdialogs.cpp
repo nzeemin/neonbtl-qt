@@ -60,14 +60,14 @@ QAboutDialog::QAboutDialog(QWidget * parent)
 
     QLabel * authorsLabel = new QLabel(tr(
             "Author:\r\nNikita Zimin\n\n"
-            "Special thanks to:\nAlexander Xolod"));
+            "Special thanks to:\nAlexander Xolodov,\nAlexey Kisly,\nAndrey Titov AKA Titus"));
 
     QLabel * linkLabel = new QLabel(
         "<a href=\"https://github.com/nzeemin/neonbtl-qt\">https://github.com/nzeemin/neonbtl-qt</a>");
     linkLabel->setOpenExternalLinks(true);
 
     QLabel * bottomLabel = new QLabel(
-        tr("Build date:\t%1 %2\nQt version:\t%3").arg(__DATE__).arg(__TIME__).arg(QT_VERSION_STR));
+        tr("Build date:\t%1 %2\nQt version:\t%3").arg(__DATE__, __TIME__, QT_VERSION_STR));
 
     QDialogButtonBox * buttonBox = new QDialogButtonBox(QDialogButtonBox::Close);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);

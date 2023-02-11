@@ -52,6 +52,8 @@ int Disasm_GetInstructionHint(
 
 class CMotherboard;
 
+#define FLOPPY_MAX_TRACKS       83
+
 #define FLOPPY_PHASE_CMD        1
 #define FLOPPY_PHASE_EXEC       2
 #define FLOPPY_PHASE_RESULT     3
@@ -92,14 +94,19 @@ struct CFloppyDrive
 {
     FILE*    fpFile;
     uint8_t* data;          // Data image for the whole disk
-    uint16_t dataptr;       // Data offset within m_data - "head" position
-    uint16_t datatrack;     // Track number of data in m_data array
-    uint16_t dataside;      // Disk side of data in m_data array
+    uint32_t datasize;
+    uint32_t dirtystart, dirtyend;  // Range of unsaved data; dirtyend == 0 means everything saved
+    uint16_t dirtycount;
     bool     okReadOnly;    // Write protection flag
 
 public:
     CFloppyDrive();
-    void Reset();       // Reset the device
+    void Reset();           // Reset the device
+
+    void WriteBlock(uint16_t block, const uint8_t* src);
+
+    bool IsDirty() const { return dirtyend != 0; }  // Has unsaved data
+    void Flush();  // Save any unsaved data
 };
 
 // Floppy controller
@@ -110,16 +117,17 @@ protected:
     CFloppyDrive m_drivedata[4];  // Floppy drives
     CFloppyDrive* m_pDrive; // Current drive; nullptr if not selected
     uint8_t  m_drive;       // Current drive number: 0 to 3; 0xff if not selected
-    uint8_t  m_phase;
+    uint8_t  m_phase;       // See FLOPPY_PHASE_XXX defines
     uint8_t  m_state;       // See FLOPPY_STATE_XXX defines
-    uint8_t  m_command[9];
+    uint8_t  m_command[9];  // Buffer for command bytes
     uint8_t  m_commandlen;
-    uint8_t  m_result[9];
+    uint8_t  m_result[9];   // Buffer for command result bytes
     uint8_t  m_resultlen;
-    uint8_t  m_resultpos;
+    uint8_t  m_resultpos;   // Current position in the result buffer
     uint8_t  m_track;       // Track number: 0 to 79
     uint8_t  m_side;        // Disk side: 0 or 1
     bool     m_int;         // Interrupt flag
+    bool     m_motor;       // Motor on/off
     bool     m_okTrace;     // Trace mode on/off
 
 public:
@@ -136,7 +144,10 @@ public:
     bool IsAttached(int drive) const { return (m_drivedata[drive].fpFile != nullptr); }
     // Check if the drive's attached image is read-only
     bool IsReadOnly(int drive) const { return m_drivedata[drive].okReadOnly; }
+    // Check if floppy engine now rotates
+    bool IsEngineOn() const { return m_motor; }
 public:
+    void     SetParams(uint8_t side, uint8_t density, uint8_t drive, uint8_t motor);
     uint8_t  GetState();        // Reading status
     uint16_t GetStateView() const { return m_state; }  // Get status value for debugger
     void     FifoWrite(uint8_t cmd);  // Writing commands
@@ -149,7 +160,66 @@ private:
     uint8_t CheckCommand();
     void StartCommand(uint8_t cmd);
     void ExecuteCommand(uint8_t cmd);
-    void FlushChanges();  // If current track was changed - save it
+    void FlushChanges();  // Save all unsaved data
+};
+
+
+//////////////////////////////////////////////////////////////////////
+// CHardDrive
+
+#define IDE_DISK_SECTOR_SIZE      512
+
+// IDE hard drive
+class CHardDrive
+{
+protected:
+    FILE*   m_fpFile;           // File pointer for the attached HDD image
+    bool    m_okReadOnly;       // Flag indicating that the HDD image file is read-only
+    uint8_t m_status;           // IDE status register, see IDE_STATUS_XXX constants
+    uint8_t m_error;            // IDE error register, see IDE_ERROR_XXX constants
+    uint8_t m_command;          // Current IDE command, see IDE_COMMAND_XXX constants
+    uint32_t m_lba;             // LBA sector number
+    int     m_numcylinders;     // Cylinder count
+    int     m_numheads;         // Head count
+    int     m_numsectors;       // Sectors per track
+    int     m_curhead;          // Current head number
+    int     m_curheadreg;       // Current head number
+    int     m_sectorcount;      // Sector counter for read/write operations
+    uint8_t m_buffer[IDE_DISK_SECTOR_SIZE];  // Sector data buffer
+    int     m_bufferoffset;     // Current offset within sector: 0..511
+    int     m_timeoutcount;     // Timeout counter to wait for the next event
+    int     m_timeoutevent;     // Current stage of operation, see TimeoutEvent enum
+
+public:
+    CHardDrive();
+    ~CHardDrive();
+    // Reset the device.
+    void Reset();
+    // Attach HDD image file to the device
+    bool AttachImage(LPCTSTR sFileName);
+    // Detach HDD image file from the device
+    void DetachImage();
+    // Check if the attached hard drive image is read-only
+    bool IsReadOnly() const { return m_okReadOnly; }
+
+public:
+    // Read word from the device port
+    uint16_t ReadPort(uint16_t port);
+    // Write word th the device port
+    void WritePort(uint16_t port, uint16_t data);
+    // Rotate disk
+    void Periodic();
+
+private:
+    uint32_t CalculateOffset() const;  // Calculate sector offset in the HDD image
+    void HandleCommand(uint8_t command);  // Handle the IDE command
+    void ReadNextSector();
+    void ReadSectorDone();
+    void WriteSectorDone();
+    void NextSector();          // Advance to the next sector, CHS-based
+    void ContinueRead();
+    void ContinueWrite();
+    void IdentifyDrive();       // Prepare m_buffer for the IDENTIFY DRIVE command
 };
 
 

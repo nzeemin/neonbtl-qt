@@ -92,7 +92,7 @@ void QDebugView::focusOutEvent(QFocusEvent *)
     repaint();  // Need to draw focus rect
 }
 
-void QDebugView::contextMenuEvent(QContextMenuEvent *event)
+void QDebugView::contextMenuEvent(QContextMenuEvent * /*event*/)
 {
 //    QMenu menu(this);
 //    //TODO

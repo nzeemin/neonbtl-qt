@@ -183,7 +183,7 @@
      <normalon>:/images/iconFloppy.svg</normalon>:/images/iconFloppySlot.svg</iconset>
    </property>
    <property name="text">
-    <string>Floppy MZ0:</string>
+    <string>Floppy 0</string>
    </property>
    <property name="iconText">
     <string>0</string>
@@ -199,7 +199,7 @@
      <normalon>:/images/iconFloppy.svg</normalon>:/images/iconFloppySlot.svg</iconset>
    </property>
    <property name="text">
-    <string>Floppy MZ1:</string>
+    <string>Floppy 1</string>
    </property>
    <property name="iconText">
     <string>1</string>

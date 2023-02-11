@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 #include <QtGui>
 #include <QMenu>
 #include "qscreen.h"
@@ -94,7 +94,7 @@ void QEmulatorScreen::keyReleaseEvent(QKeyEvent *event)
     event->accept();
 }
 
-const unsigned char arrQtkey2UkncscanLat[256] =    // ËÀÒ
+const unsigned char arrQtkey2UkncscanLat[256] =    // ЛАТ
 {
     /*       0     1     2     3     4     5     6     7     8     9     a     b     c     d     e     f  */
     /*0*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
@@ -114,7 +114,7 @@ const unsigned char arrQtkey2UkncscanLat[256] =    // ËÀÒ
     /*e*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
     /*f*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
 };
-const unsigned char arrQtkey2UkncscanRus[256] =    // ÐÓÑ
+const unsigned char arrQtkey2UkncscanRus[256] =    // РУС
 {
     /*       0     1     2     3     4     5     6     7     8     9     a     b     c     d     e     f  */
     /*0*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,

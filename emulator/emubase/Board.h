@@ -18,6 +18,7 @@ NEONBTL. If not, see <http://www.gnu.org/licenses/>. */
 class CProcessor;
 class Motherboard;
 class CFloppyController;
+class CHardDrive;
 
 
 //////////////////////////////////////////////////////////////////////
@@ -114,6 +115,7 @@ private:  // Devices
     uint16_t    m_Configuration;  // See NEON_COPT_Xxx flag constants
     CProcessor* m_pCPU;  // CPU device
     CFloppyController* m_pFloppyCtl;  // FDD control
+    CHardDrive* m_pHardDrive;  // HDD control
 public:  // Getting devices
     CProcessor* GetCPU() { return m_pCPU; }
 private:  // Memory
@@ -135,7 +137,7 @@ public:  // Debug
     void        DebugTicks();  // One Debug CPU tick -- use for debug step or debug breakpoint
     void        SetCPUBreakpoints(const uint16_t* bps) { m_CPUbps = bps; } // Set CPU breakpoint list
     uint32_t    GetTrace() const { return m_dwTrace; }
-    void        SetTrace(uint32_t dwTraceCPU) { m_dwTrace = dwTraceCPU; }
+    void        SetTrace(uint32_t dwTrace);
     void        LoadRAMBank(int bank, const void* buffer);
 public:  // System control
     void        SetConfiguration(uint16_t conf);
@@ -146,13 +148,28 @@ public:  // System control
     void        ResetDevices();     // INIT signal
     bool        SystemFrame();  // Do one frame -- use for normal run
     void        UpdateKeyboardMatrix(const uint8_t matrix[8]);
+    void        MouseMove(short dx, short dy, bool btnLeft, bool btnRight);
 public:  // Floppy
     bool        AttachFloppyImage(int slot, LPCTSTR sFileName);
     void        DetachFloppyImage(int slot);
     bool        IsFloppyImageAttached(int slot) const;
     bool        IsFloppyReadOnly(int slot) const;
+    // Check if the floppy drive engine rotates the disks.
+    bool        IsFloppyEngineOn() const;
     // Fill the current HD buffer, to call from floppy controller only
     bool        FillHDBuffer(const uint8_t* data);
+    const uint8_t* GetHDBuffer();
+public:  // IDE HDD
+    // Attach hard drive image
+    bool        AttachHardImage(LPCTSTR sFileName);
+    // Detach hard drive image
+    void        DetachHardImage();
+    // Check if the hard drive attached
+    bool        IsHardImageAttached() const;
+    // Check if the attached hard drive image is read-only
+    bool        IsHardImageReadOnly() const;
+    uint16_t    GetHardPortWord(uint16_t port);  // To use from CMotherboard only
+    void        SetHardPortWord(uint16_t port, uint16_t data);  // To use from CMotherboard only
 public:  // Callbacks
     void        SetSoundGenCallback(SOUNDGENCALLBACK callback);
     void        SetSerialOutCallback(SERIALOUTCALLBACK outcallback);
@@ -197,16 +214,21 @@ private:  // Ports/devices: implementation
     uint16_t    m_PICflags;         // PIC 8259A flags, see PIC_Xxx constants
     uint8_t     m_PICRR;            // PIC interrupt request register
     uint8_t     m_PICMR;            // PIC mask register
-    uint16_t    m_PPIA;
+    uint8_t     m_PPIAwr, m_PPIArd;
     uint16_t    m_PPIB;             // 161032 Printer data - bits 0..7
     uint16_t    m_PPIC;             // 161034
-    uint16_t    m_hdsdh;
+    uint16_t    m_hdsdh;            // 161054 HD.SDH
+    uint8_t     m_hdscnt;
+    uint8_t     m_hdsnum;           // HDD sector number
+    uint16_t    m_hdcnum;           // HDD cylinder number
     bool        m_hdint;            // HDD interrupt flag
-    uint8_t     m_nHDbuff;          // Index of the current HD buffer, 0..3
-    uint16_t    m_nHDbuffpos;       // Current position in the current HD buffer, 0..511
+    uint8_t     m_nHDbuff;          // Index of the current FD/HD buffer, 0..3
+    uint16_t    m_nHDbuffpos;       // Current position in the current FD/HD buffer, 0..511
+    bool        m_HDbuffdir;        // FD/HD buffer current direction: false = read, true = write
     uint8_t     m_keymatrix[8];     // Keyboard matrix
     uint16_t    m_keypos;           // Keyboard reading position 0..7
     bool        m_keyint;           // Keyboard interrupt flag
+    uint8_t     m_mousedx, m_mousedy, m_mousest; // Mouse delta X, Y, state
     PIT8253     m_snd, m_snl;
     uint8_t     m_rtcalarmsec, m_rtcalarmmin, m_rtcalarmhour;
     uint8_t     m_rtcmemory[50];
@@ -216,9 +238,11 @@ private:
     void        SetPICInterrupt(int signal, bool set = true);  // Set/reset PIC interrupt signal 0..7
     void        UpdateInterrupts();
     uint8_t     ProcessRtcRead(uint16_t address) const;
+    void        ProcessRtcWrite(uint16_t address, uint8_t byte);
     void        ProcessTimerWrite(uint16_t address, uint8_t byte);
     uint8_t     ProcessTimerRead(uint16_t address);
     void        ProcessKeyboardWrite(uint8_t byte);
+    void        ProcessMouseWrite(uint8_t byte);
     void        DoSound();
 private:
     const uint16_t* m_CPUbps;  // CPU breakpoint list, ends with 177777 value
