@@ -78,23 +78,27 @@ void QEmulatorScreen::keyPressEvent(QKeyEvent *event)
     if (! g_okEmulatorRunning) return;
     if (event->isAutoRepeat()) return;
 
-    unsigned char neonscan = TranslateQtKeyToUkncKey(event->key());
-    if (neonscan == 0) return;
+    unsigned char keyscan = TranslateQtKeyToNeonKey(event->key());
+    if (keyscan == 0) return;
 
-    //Emulator_KeyEvent(neonscan, true);
+    m_keyboardMatrix[(keyscan >> 8) & 7] |= (keyscan & 0xff);
+
     event->accept();
 }
-
+sp
 void QEmulatorScreen::keyReleaseEvent(QKeyEvent *event)
 {
-    unsigned char neonscan = TranslateQtKeyToUkncKey(event->key());
-    if (neonscan == 0) return;
+    if (event->isAutoRepeat()) return;
 
-    //Emulator_KeyEvent(neonscan, false);
+    unsigned char keyscan = TranslateQtKeyToNeonKey(event->key());
+    if (keyscan == 0) return;
+
+    m_keyboardMatrix[(keyscan >> 8) & 7] &= ~(keyscan & 0xff);
+
     event->accept();
 }
 
-const unsigned char arrQtkey2UkncscanLat[256] =    // ЛАТ
+const unsigned char arrQtkey2NeonscanLat[256] =    // ЛАТ
 {
     /*       0     1     2     3     4     5     6     7     8     9     a     b     c     d     e     f  */
     /*0*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
@@ -114,7 +118,7 @@ const unsigned char arrQtkey2UkncscanLat[256] =    // ЛАТ
     /*e*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
     /*f*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
 };
-const unsigned char arrQtkey2UkncscanRus[256] =    // РУС
+const unsigned char arrQtkey2NeonscanRus[256] =    // РУС
 {
     /*       0     1     2     3     4     5     6     7     8     9     a     b     c     d     e     f  */
     /*0*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
@@ -135,35 +139,50 @@ const unsigned char arrQtkey2UkncscanRus[256] =    // РУС
     /*f*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
 };
 
+void QEmulatorScreen::processKeyboard(quint16 keyscan)
+{
+    quint8 matrix[8];
+    ::memcpy(matrix, m_keyboardMatrix, sizeof(matrix));
 
-unsigned char QEmulatorScreen::TranslateQtKeyToUkncKey(int qtkey)
+    if (keyscan != 0)  // Currently pressed key on KeyboardView
+    {
+        matrix[(keyscan >> 8) & 7] |= (keyscan & 0xff);
+    }
+
+    Emulator_UpdateKeyboardMatrix(matrix);
+}
+
+quint16 QEmulatorScreen::TranslateQtKeyToNeonKey(int qtkey)
 {
     switch (qtkey)
     {
-    case Qt::Key_Down:      return 0134;
-    case Qt::Key_Up:        return 0154;
-    case Qt::Key_Left:      return 0116;
-    case Qt::Key_Right:     return 0133;
-    case Qt::Key_Enter:     return 0166;
-    case Qt::Key_Return:    return 0166;
-    case Qt::Key_Tab:       return 0026;
-    case Qt::Key_Shift:     return 0105;  // HP key
-    case Qt::Key_Space:     return 0113;
-    case Qt::Key_Backspace: return 0132;  // ZB (BACKSPACE) key
-    case Qt::Key_Control:   return 0046;  // SU (UPR) key
-    case Qt::Key_F1:        return 0010;  // K1 / K6
-    case Qt::Key_F2:        return 0011;  // K1 / K6
-    case Qt::Key_F3:        return 0012;  // K1 / K6
-    case Qt::Key_F4:        return 0014;  // K1 / K6
-    case Qt::Key_F5:        return 0015;  // K1 / K6
-    case Qt::Key_F7:        return 0152;  // UST key
-    case Qt::Key_F8:        return 0151;  // ISP key
+    case Qt::Key_Down:      return 0x510;
+    case Qt::Key_Up:        return 0x610;
+    case Qt::Key_Left:      return 0x420;
+    case Qt::Key_Right:     return 0x508;
+    case Qt::Key_Enter:     return 0x780;  // NUM Enter
+    case Qt::Key_Return:    return 0x608;
+    case Qt::Key_Tab:       return 0x180;
+    case Qt::Key_Shift:     return 0x404;  // HP key
+    case Qt::Key_Space:     return 0x408;
+    case Qt::Key_Backspace: return 0x503;  // ZB (BACKSPACE) key
+    case Qt::Key_Control:   return 0x280;  // SU (UPR) key
+    case Qt::Key_F1:        return 0x002;  // K1
+    case Qt::Key_F2:        return 0x004;  // K2
+    case Qt::Key_F3:        return 0x003;  // K3
+    case Qt::Key_F4:        return 0x010;  // K4
+    case Qt::Key_F5:        return 0x005;  // K5
+    case Qt::Key_F6:        return 0x703;  // POM key
+    case Qt::Key_F7:        return 0x603;  // UST key
+    case Qt::Key_F8:        return 0x604;  // ISP key
+    case Qt::Key_F11:       return 0x704;  // SBROS (RESET)
+    case Qt::Key_F12:       return 0x240;  // STOP
     }
 
 //    if (qtkey >= 32 && qtkey <= 255)
 //    {
 //        unsigned short ukncRegister = g_pBoard->GetKeyboardRegister();
-//        const unsigned char * pTable = ((ukncRegister & KEYB_LAT) != 0) ? arrQtkey2UkncscanLat : arrQtkey2UkncscanRus;
+//        const unsigned char * pTable = ((ukncRegister & KEYB_LAT) != 0) ? arrQtkey2NeonscanLat : arrQtkey2NeonscanRus;
 //        return pTable[qtkey];
 //    }
 

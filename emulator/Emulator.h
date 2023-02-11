@@ -48,6 +48,8 @@ void Emulator_Reset();
 bool Emulator_SystemFrame();
 float Emulator_GetUptime();  // Device uptime, in seconds
 
+void Emulator_UpdateKeyboardMatrix(const quint8 matrix[8]);
+
 void Emulator_GetScreenSize(int scrmode, int* pwid, int* phei);
 void Emulator_PrepareScreenRGB32(void* pImageBits, int screenMode);
 

@@ -352,6 +352,11 @@ void Emulator_SetSound(bool enable)
     m_okEmulatorSound = enable;
 }
 
+void Emulator_UpdateKeyboardMatrix(const quint8 matrix[8])
+{
+    g_pBoard->UpdateKeyboardMatrix(matrix);
+}
+
 bool Emulator_SystemFrame()
 {
     g_pBoard->SetCPUBreakpoints(m_wEmulatorCPUBpsCount > 0 ? m_EmulatorCPUBps : nullptr);

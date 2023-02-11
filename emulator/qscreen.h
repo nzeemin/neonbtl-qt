@@ -14,9 +14,9 @@ public:
 
 public:
     QImage getScreenshot();
-    bool getScreenText(uint8_t* buffer);
     void setMode(int mode);
     int mode() const { return m_mode; }
+    void processKeyboard(quint16 keyscan);
 
 protected:
     void createDisplay();
@@ -28,9 +28,10 @@ protected:
 private:
     QImage* m_image;
     int m_mode;
+    quint8 m_keyboardMatrix[8];
 
 private:
-    unsigned char TranslateQtKeyToUkncKey(int qtkey);
+    quint16 TranslateQtKeyToNeonKey(int qtkey);
 };
 
 #endif // QEMULATORSCREEN_H

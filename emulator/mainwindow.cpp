@@ -471,6 +471,8 @@ void MainWindow::emulatorFrame()
     if (!isActiveWindow())
         return;
 
+    quint16 keyscan = m_keyboard->getKeyPressed();
+    m_screen->processKeyboard(keyscan);
     if (!Emulator_SystemFrame())
         Emulator_Stop();  // Breakpoint hit
 
