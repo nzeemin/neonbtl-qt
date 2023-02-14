@@ -2,7 +2,6 @@
 #define QEMULATORSCREEN_H
 
 #include <QWidget>
-#include "main.h"
 
 
 class QEmulatorScreen : public QWidget
@@ -16,7 +15,7 @@ public:
     QImage getScreenshot();
     void setMode(int mode);
     int mode() const { return m_mode; }
-    void processKeyboard(quint16 keyscan);
+    void processKeyboard(quint16 vkeyscan);
 
 protected:
     void createDisplay();
@@ -28,7 +27,7 @@ protected:
 private:
     QImage* m_image;
     int m_mode;
-    quint8 m_keyboardMatrix[8];
+    QList<quint16> m_keysPressed;
 
 private:
     quint16 TranslateQtKeyToNeonKey(int qtkey);

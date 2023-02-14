@@ -4,18 +4,16 @@
 #include "qscreen.h"
 #include "mainwindow.h"
 #include "Emulator.h"
-#include "emubase/Emubase.h"
 
 
 //////////////////////////////////////////////////////////////////////
 
 
 QEmulatorScreen::QEmulatorScreen(QWidget *parent) :
-    QWidget(parent), m_image(nullptr)
+    QWidget(parent), m_image(nullptr), m_keysPressed()
 {
     setFocusPolicy(Qt::StrongFocus);
 
-    m_image = nullptr;
     m_mode = 1;
 
     createDisplay();
@@ -24,6 +22,7 @@ QEmulatorScreen::QEmulatorScreen(QWidget *parent) :
 QEmulatorScreen::~QEmulatorScreen()
 {
     delete m_image;
+    m_image = nullptr;
 }
 
 void QEmulatorScreen::setMode(int mode)
@@ -78,75 +77,54 @@ void QEmulatorScreen::keyPressEvent(QKeyEvent *event)
     if (! g_okEmulatorRunning) return;
     if (event->isAutoRepeat()) return;
 
-    unsigned char keyscan = TranslateQtKeyToNeonKey(event->key());
+    quint16 keyscan = TranslateQtKeyToNeonKey(event->key());
+    //DebugPrintFormat("Key %02x scan 0x%03x", event->key(), keyscan);
     if (keyscan == 0) return;
 
-    m_keyboardMatrix[(keyscan >> 8) & 7] |= (keyscan & 0xff);
-
     event->accept();
+
+    if (!m_keysPressed.contains(keyscan))
+        m_keysPressed.append(keyscan);
 }
-sp
+
 void QEmulatorScreen::keyReleaseEvent(QKeyEvent *event)
 {
     if (event->isAutoRepeat()) return;
 
-    unsigned char keyscan = TranslateQtKeyToNeonKey(event->key());
+    quint16 keyscan = TranslateQtKeyToNeonKey(event->key());
     if (keyscan == 0) return;
 
-    m_keyboardMatrix[(keyscan >> 8) & 7] &= ~(keyscan & 0xff);
-
     event->accept();
+
+    if (m_keysPressed.contains(keyscan))
+        m_keysPressed.removeAll(keyscan);
 }
 
-const unsigned char arrQtkey2NeonscanLat[256] =    // ЛАТ
+const quint16 NOKEY = 0;
+
+const quint16 arrQtkey2NeonscanLat[128 - 32] =
 {
-    /*       0     1     2     3     4     5     6     7     8     9     a     b     c     d     e     f  */
-    /*0*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*1*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*2*/    0113, 0004, 0151, 0172, 0000, 0116, 0154, 0133, 0134, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*3*/    0176, 0030, 0031, 0032, 0013, 0034, 0035, 0016, 0017, 0177, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*4*/    0000, 0072, 0076, 0050, 0057, 0033, 0047, 0055, 0156, 0073, 0027, 0052, 0056, 0112, 0054, 0075,
-    /*5*/    0053, 0067, 0074, 0111, 0114, 0051, 0137, 0071, 0115, 0070, 0157, 0000, 0000, 0000, 0000, 0000,
-    /*6*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*7*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*8*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*9*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*a*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*b*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*c*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*d*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*e*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*f*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-};
-const unsigned char arrQtkey2NeonscanRus[256] =    // РУС
-{
-    /*       0     1     2     3     4     5     6     7     8     9     a     b     c     d     e     f  */
-    /*0*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*1*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*2*/    0113, 0004, 0151, 0172, 0000, 0116, 0154, 0133, 0134, 0000, 0000, 0000, 0000, 0171, 0152, 0000,
-    /*3*/    0176, 0030, 0031, 0032, 0013, 0034, 0035, 0016, 0017, 0177, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*4*/    0000, 0047, 0073, 0111, 0071, 0051, 0072, 0053, 0074, 0036, 0075, 0056, 0057, 0115, 0114, 0037,
-    /*5*/    0157, 0027, 0052, 0070, 0033, 0055, 0112, 0050, 0110, 0054, 0067, 0000, 0000, 0000, 0000, 0000,
-    /*6*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*7*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*8*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*9*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*a*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*b*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*c*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*d*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*e*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
-    /*f*/    0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000, 0000,
+    /*       0      1      2      3      4      5      6      7      8      9      a      b      c      d      e      f  */
+    /*2*/    0x408, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY,
+    /*3*/    0x720, 0x102, 0x104, 0x103, 0x008, 0x110, 0x105, 0x020, 0x006, 0x706, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY,
+    /*4*/    NOKEY, 0x303, 0x320, 0x202, 0x206, 0x108, 0x201, 0x205, 0x620, 0x308, 0x101, 0x203, 0x220, 0x403, 0x210, 0x305,
+    /*5*/    0x208, 0x301, 0x310, 0x404, 0x410, 0x204, 0x506, 0x304, 0x405, 0x302, 0x606, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY,
+    /*6*/    NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY,
+    /*7*/    NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY, NOKEY,
 };
 
-void QEmulatorScreen::processKeyboard(quint16 keyscan)
+void QEmulatorScreen::processKeyboard(quint16 vkeyscan)
 {
     quint8 matrix[8];
-    ::memcpy(matrix, m_keyboardMatrix, sizeof(matrix));
-
-    if (keyscan != 0)  // Currently pressed key on KeyboardView
+    ::memset(matrix, 0, sizeof(matrix));
+    foreach(quint16 keyscan, m_keysPressed)
     {
         matrix[(keyscan >> 8) & 7] |= (keyscan & 0xff);
+    }
+
+    if (vkeyscan != 0)  // Currently pressed key on KeyboardView
+    {
+        matrix[(vkeyscan >> 8) & 7] |= (vkeyscan & 0xff);
     }
 
     Emulator_UpdateKeyboardMatrix(matrix);
@@ -161,7 +139,7 @@ quint16 QEmulatorScreen::TranslateQtKeyToNeonKey(int qtkey)
     case Qt::Key_Left:      return 0x420;
     case Qt::Key_Right:     return 0x508;
     case Qt::Key_Enter:     return 0x780;  // NUM Enter
-    case Qt::Key_Return:    return 0x608;
+    case Qt::Key_Return:    return 0x608;  // Enter
     case Qt::Key_Tab:       return 0x180;
     case Qt::Key_Shift:     return 0x404;  // HP key
     case Qt::Key_Space:     return 0x408;
@@ -179,12 +157,10 @@ quint16 QEmulatorScreen::TranslateQtKeyToNeonKey(int qtkey)
     case Qt::Key_F12:       return 0x240;  // STOP
     }
 
-//    if (qtkey >= 32 && qtkey <= 255)
-//    {
-//        unsigned short ukncRegister = g_pBoard->GetKeyboardRegister();
-//        const unsigned char * pTable = ((ukncRegister & KEYB_LAT) != 0) ? arrQtkey2NeonscanLat : arrQtkey2NeonscanRus;
-//        return pTable[qtkey];
-//    }
+    if (qtkey >= 32 && qtkey < 128)
+    {
+        return arrQtkey2NeonscanLat[qtkey - 32];
+    }
 
     return 0;
 }

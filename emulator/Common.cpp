@@ -7,6 +7,8 @@
 #include <QFont>
 #include <QPainter>
 #include <QCoreApplication>
+#include "main.h"
+#include "mainwindow.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -59,9 +61,11 @@ bool AlertOkCancel(const QString &sMessage)
 
 #if !defined(PRODUCT)
 
-void DebugPrint(const char* /*message*/)
+void DebugPrint(const char* message)
 {
-    //TODO: Implement in this environment
+    MainWindow* mainWindow = Global_getMainWindow();
+    if (mainWindow != nullptr)
+        mainWindow->consolePrint(message);
 }
 
 void DebugPrintFormat(const char* pszFormat, ...)
