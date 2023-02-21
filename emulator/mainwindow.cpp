@@ -19,7 +19,6 @@
 #include "qdebugview.h"
 #include "qdisasmview.h"
 #include "qmemoryview.h"
-#include "qscripting.h"
 #include "Emulator.h"
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -36,7 +35,6 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->actionFileScreenshot, SIGNAL(triggered()), this, SLOT(saveScreenshot()));
     QObject::connect(ui->actionFileScreenshotAs, SIGNAL(triggered()), this, SLOT(saveScreenshotAs()));
     QObject::connect(ui->actionFileScreenshotToClipboard, SIGNAL(triggered()), this, SLOT(screenshotToClipboard()));
-    QObject::connect(ui->actionScriptRun, SIGNAL(triggered()), this, SLOT(scriptRun()));
     QObject::connect(ui->actionFileExit, SIGNAL(triggered()), this, SLOT(close()));
     QObject::connect(ui->actionEmulatorRun, SIGNAL(triggered()), this, SLOT(emulatorRun()));
     QObject::connect(ui->actionEmulatorReset, SIGNAL(triggered()), this, SLOT(emulatorReset()));
@@ -650,26 +648,6 @@ void MainWindow::debugClearConsole()
 void MainWindow::debugRemoveAllBreakpoints()
 {
     m_console->execConsoleCommand("bc");
-}
-
-void MainWindow::scriptRun()
-{
-    if (g_okEmulatorRunning)
-        emulatorRun();  // Stop the emulator
-
-    QFileDialog dlg;
-    dlg.setAcceptMode(QFileDialog::AcceptOpen);
-    dlg.setNameFilter(tr("Script files (*.js)"));
-    if (dlg.exec() == QDialog::Rejected)
-        return;
-
-    QString strFileName = dlg.selectedFiles().at(0);
-    QFile file(strFileName);
-    file.open(QIODevice::ReadOnly);
-    QString strScript = file.readAll();
-
-    QScriptWindow window(this);
-    window.runScript(strScript);
 }
 
 void MainWindow::consolePrint(const QString &message)

@@ -189,7 +189,7 @@ void QDebugProcessorCtrl::paintEvent(QPaintEvent * /*event*/)
 
     QFont font = Common_GetMonospacedFont();
     painter.setFont(font);
-    QFontMetrics fontmetrics(font);
+    QFontMetrics fontmetrics = painter.fontMetrics();
     int cxChar = fontmetrics.averageCharWidth();
     int cyLine = fontmetrics.height();
     QColor colorText = palette().color(QPalette::Text);
@@ -319,7 +319,7 @@ void QDebugStackCtrl::paintEvent(QPaintEvent * /*event*/)
 
     QFont font = Common_GetMonospacedFont();
     painter.setFont(font);
-    QFontMetrics fontmetrics(font);
+    QFontMetrics fontmetrics = painter.fontMetrics();
     int cxChar = fontmetrics.averageCharWidth();
     int cyLine = fontmetrics.height();
     QColor colorText = palette().color(QPalette::Text);
@@ -434,7 +434,7 @@ void QDebugPortsCtrl::paintEvent(QPaintEvent * /*event*/)
 
     QFont font = Common_GetMonospacedFont();
     painter.setFont(font);
-    QFontMetrics fontmetrics(font);
+    QFontMetrics fontmetrics = painter.fontMetrics();
     int cxChar = fontmetrics.averageCharWidth();
     int cyLine = fontmetrics.height();
 
@@ -465,7 +465,7 @@ void QDebugBreakpointsCtrl::paintEvent(QPaintEvent * /*event*/)
 
     QFont font = Common_GetMonospacedFont();
     painter.setFont(font);
-    QFontMetrics fontmetrics(font);
+    QFontMetrics fontmetrics = painter.fontMetrics();
     int cxChar = fontmetrics.averageCharWidth();
     int cyLine = fontmetrics.height();
 
@@ -503,7 +503,7 @@ void QDebugMemoryMapCtrl::paintEvent(QPaintEvent * /*event*/)
 
     QFont font = Common_GetMonospacedFont();
     painter.setFont(font);
-    QFontMetrics fontmetrics(font);
+    QFontMetrics fontmetrics = painter.fontMetrics();
     int cxChar = fontmetrics.averageCharWidth();
     int cyLine = fontmetrics.height();
 

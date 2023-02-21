@@ -21,7 +21,6 @@ SOURCES += main.cpp \
     qconsoleview.cpp \
     qmemoryview.cpp \
     qsoundout.cpp \
-    qscripting.cpp \
     UnitTests.cpp \
     qdialogs.cpp
 HEADERS += mainwindow.h \
@@ -40,13 +39,11 @@ HEADERS += mainwindow.h \
     qconsoleview.h \
     qmemoryview.h \
     qsoundout.h \
-    qscripting.h \
     UnitTests.h \
     qdialogs.h
 FORMS += mainwindow.ui
 RESOURCES += QtNeonBtl.qrc
 QT += widgets
-QT += script
 QT += testlib 
 QT += multimedia
 DEFINES -= UNICODE _UNICODE

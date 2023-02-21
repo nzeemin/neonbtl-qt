@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>662</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -33,8 +33,6 @@
     <addaction name="actionFileScreenshot"/>
     <addaction name="actionFileScreenshotAs"/>
     <addaction name="actionFileScreenshotToClipboard"/>
-    <addaction name="separator"/>
-    <addaction name="actionScriptRun"/>
     <addaction name="separator"/>
     <addaction name="actionFileExit"/>
    </widget>
@@ -336,25 +334,12 @@
     <string>Sound</string>
    </property>
   </action>
-  <action name="actionScriptRun">
-   <property name="text">
-    <string>Run Script...</string>
-   </property>
-  </action>
   <action name="actionViewMode4">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
     <string>1248 x 900</string>
-   </property>
-  </action>
-  <action name="actionViewSizeUpscaled5">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>1280 x 864 Interlaced</string>
    </property>
   </action>
   <action name="actionSaveStateImage">
@@ -383,36 +368,12 @@
     <string>Save Screenshot as...</string>
    </property>
   </action>
-  <action name="actionViewGrbScreen">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>GRB Screen</string>
-   </property>
-  </action>
   <action name="actionViewMode2">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
     <string>832 x 600</string>
-   </property>
-  </action>
-  <action name="actionViewSizeUpscaled175">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>1120 x 864 Interlaced</string>
-   </property>
-  </action>
-  <action name="actionViewSizeUpscaled4">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>960 x 720 4:3</string>
    </property>
   </action>
   <action name="actionFileScreenshotToClipboard">

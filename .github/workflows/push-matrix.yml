@@ -34,7 +34,6 @@ jobs:
       with:
         version: ${{ matrix.qt-version }}
         install-deps: 'true'
-        modules: 'qtscript'
     
     - name: Versions
       run: qmake -v

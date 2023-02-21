@@ -41,6 +41,7 @@ public:
     void detachFloppy(int slot);
     bool attachHardDrive(const QString& filename);
     void detachHardDrive();
+    void consolePrint(const QString&);
 
 public slots:
     void saveStateImage();
@@ -55,6 +56,7 @@ public slots:
     void emulatorAutostart();
     void emulatorFloppy0();
     void emulatorFloppy1();
+    void emulatorHardDrive();
     void debugConsoleView();
     void debugDebugView();
     void debugDisasmView();
@@ -74,8 +76,6 @@ public slots:
     void confRam2048();
     void confRam4096();
     void soundEnabled();
-    void scriptRun();
-    void consolePrint(const QString&);
 
 protected:
     void showEvent(QShowEvent *);
@@ -103,7 +103,6 @@ private:
 
     void changeConfiguration(int configuration);
     void emulatorFloppy(int slot);
-    void emulatorHardDrive();
 };
 
 #endif // MAINWINDOW_H
