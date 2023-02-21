@@ -1,0 +1,61 @@
+name: linux-release
+
+on:
+  push:
+    branches: [ "main" ]
+  tags:
+    - 'v*'
+
+env:
+  SOURCE_DIR: ${{ github.workspace }}
+  QT_VERSION: 5.15.2
+  ARTIFACT:   qtneonbtl-linux-build.AppDir
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: ${{ env.QT_VERSION }}
+        host: linux
+        install-deps: 'true'
+        target: desktop
+        arch: gcc_64
+        dir: ${{ runner.temp }}
+        setup-python: false
+    
+    - name: Versions
+      run: qmake -v
+
+    - name: Create build directory
+      run:  mkdir ${{ env.SOURCE_DIR }}/build
+
+    - name: Build
+      run: |
+        cd emulator
+        qmake "CONFIG+=release" QtNeonBtl.pro
+        make
+
+    - name: AppDir
+      working-directory: ${{ env.SOURCE_DIR }}/build
+      run: |
+        wget -O linuxdeployqt https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+        chmod a+x linuxdeployqt
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/Qt/5.15.2/gcc_64/lib/
+        cp ${{ env.SOURCE_DIR }}/emulator/QtNeonBtl .
+        cp ${{ env.SOURCE_DIR }}/linux/* .
+        ./linuxdeployqt qtneonbtl.desktop -no-translations
+        ls -l
+        mv qtneonbtl-*.AppDir ${{ env.ARTIFACT }}
+
+    - name: Linux artefact
+      uses: actions/upload-artifact@v1
+      with:
+        name: ${{ env.ARTIFACT }}
+        path: ${{ env.SOURCE_DIR }}/build/${{ env.ARTIFACT }}
