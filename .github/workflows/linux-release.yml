@@ -21,7 +21,9 @@ jobs:
           install-deps: 'true'
 
       - name: Install packages
-        run: sudo apt-get install fuse libfuse2 libgstapp
+        run: |
+          sudo apt-get install fuse libfuse2
+          sudo apt-get install libgstreamer-plugins-base0.10-0
     
       - name: Versions
         run: qmake -v
