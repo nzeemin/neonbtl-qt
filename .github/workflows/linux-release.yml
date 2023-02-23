@@ -23,7 +23,10 @@ jobs:
           install-deps: 'true'
 
       - name: Install packages
-        run: sudo apt-get install fuse libfuse2
+        run: |
+          sudo apt-get install fuse libfuse2
+          sudo add-apt-repository universe
+          sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev
 
       - name: Get linuxdeployqt
         run: |
