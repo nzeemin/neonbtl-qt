@@ -5,7 +5,7 @@ on: workflow_dispatch
 env:
   SOURCE_DIR: ${{ github.workspace }}
   QT_VERSION: 5.15.2
-  ARTIFACT:   qtneonbtl-linux-build.AppDir
+  ARTIFACT:   qtneonbtl.AppImage
 
 jobs:
   build:
@@ -54,9 +54,9 @@ jobs:
         run: |
           cp ${{ env.SOURCE_DIR }}/emulator/QtNeonBtl ./usr/bin/
           cp ${{ env.SOURCE_DIR }}/linux/qtneonbtl.desktop ./usr/share/applications/
-          ../linuxdeployqt-continuous-x86_64.AppImage ./usr/share/applications/qtneonbtl.desktop -appimage -no-translations -verbose=2
+          ../linuxdeployqt-continuous-x86_64.AppImage ./usr/share/applications/qtneonbtl.desktop -appimage -no-translations
           ls -l
-          mv qtneonbtl-*.AppDir ${{ env.ARTIFACT }}
+          mv qtneonbtl-*.AppImage ${{ env.ARTIFACT }}
 
       - name: Linux artefact
         uses: actions/upload-artifact@v1
