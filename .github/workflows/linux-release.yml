@@ -9,7 +9,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-18.04
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -22,7 +22,7 @@ jobs:
 
       - name: Install FUSE
         run: |
-          sudo apt-get install libfuse2
+          sudo apt-get install fuse libfuse2
     
       - name: Versions
         run: qmake -v
