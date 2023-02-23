@@ -19,6 +19,7 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           target: desktop
+          modules: qtmultimedia
           install-deps: 'true'
 
       - name: Install packages
@@ -45,10 +46,9 @@ jobs:
           qmake "CONFIG+=release" QtNeonBtl.pro
           make
 
-      - name: AppDir
+      - name: Packaging
         working-directory: ${{ env.SOURCE_DIR }}/build
         run: |
-          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/Qt/5.15.2/gcc_64/lib/
           cp ${{ env.SOURCE_DIR }}/emulator/QtNeonBtl ./usr/bin/
           cp ${{ env.SOURCE_DIR }}/linux/qtneonbtl.desktop ./usr/share/applications/
           ../linuxdeployqt-continuous-x86_64.AppImage ./usr/share/applications/qtneonbtl.desktop -appimage -no-translations -verbose=3
