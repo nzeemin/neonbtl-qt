@@ -21,9 +21,7 @@ jobs:
           install-deps: 'true'
 
       - name: Install packages
-        run: |
-          sudo apt-get install fuse libfuse2
-          sudo apt-get install libgstreamer-plugins-base0.10-0
+        run: sudo apt-get install fuse libfuse2
     
       - name: Versions
         run: qmake -v
@@ -45,7 +43,7 @@ jobs:
           export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/Qt/5.15.2/gcc_64/lib/
           cp ${{ env.SOURCE_DIR }}/emulator/QtNeonBtl .
           cp ${{ env.SOURCE_DIR }}/linux/* .
-          ./linuxdeployqt*.AppImage qtneonbtl.desktop -no-translations
+          ./linuxdeployqt*.AppImage qtneonbtl.desktop -no-translations -bundle-non-qt-libs
           ls -l
           mv qtneonbtl-*.AppDir ${{ env.ARTIFACT }}
 
