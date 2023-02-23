@@ -18,12 +18,7 @@ jobs:
         uses: jurplel/install-qt-action@v2
         with:
           version: ${{ env.QT_VERSION }}
-          host: linux
           install-deps: 'true'
-          target: desktop
-          arch: gcc_64
-          dir: ${{ runner.temp }}
-          setup-python: false
     
       - name: Versions
         run: qmake -v
