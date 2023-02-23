@@ -18,16 +18,26 @@ jobs:
         uses: jurplel/install-qt-action@v2
         with:
           version: ${{ env.QT_VERSION }}
+          target: desktop
           install-deps: 'true'
 
       - name: Install packages
         run: sudo apt-get install fuse libfuse2
+
+      - name: Get linuxdeployqt
+        run: |
+          wget -nv -c https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+          chmod a+x linuxdeployqt-continuous-x86_64.AppImage
     
       - name: Versions
         run: qmake -v
 
       - name: Create build directory
-        run:  mkdir ${{ env.SOURCE_DIR }}/build
+        run: |
+          mkdir ${{ env.SOURCE_DIR }}/build
+          mkdir -p ${{ env.SOURCE_DIR }}/build/usr/bin
+          mkdir -p ${{ env.SOURCE_DIR }}/build/usr/share
+          mkdir -p ${{ env.SOURCE_DIR }}/build/usr/share/applications
 
       - name: Build
         run: |
@@ -38,12 +48,10 @@ jobs:
       - name: AppDir
         working-directory: ${{ env.SOURCE_DIR }}/build
         run: |
-          wget -nv -c https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
-          chmod a+x linuxdeployqt*.AppImage
           export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/Qt/5.15.2/gcc_64/lib/
-          cp ${{ env.SOURCE_DIR }}/emulator/QtNeonBtl .
-          cp ${{ env.SOURCE_DIR }}/linux/* .
-          ./linuxdeployqt*.AppImage qtneonbtl.desktop -no-translations -bundle-non-qt-libs
+          cp ${{ env.SOURCE_DIR }}/emulator/QtNeonBtl ./usr/bin/
+          cp ${{ env.SOURCE_DIR }}/linux/qtneonbtl.desktop ./usr/share/applications/
+          ../linuxdeployqt-continuous-x86_64.AppImage ./usr/share/applications/qtneonbtl.desktop -appimage -no-translations -verbose=3
           ls -l
           mv qtneonbtl-*.AppDir ${{ env.ARTIFACT }}
 
