@@ -54,7 +54,7 @@ jobs:
         run: |
           cp ${{ env.SOURCE_DIR }}/emulator/QtNeonBtl ./usr/bin/
           cp ${{ env.SOURCE_DIR }}/linux/* .
-          ../linuxdeployqt-continuous-x86_64.AppImage qtneonbtl.desktop -appimage -no-translations
+          ../linuxdeployqt-continuous-x86_64.AppImage qtneonbtl.desktop -appimage -no-translations -always-overwrite
           ls -l
           mv qtneonbtl-*.AppImage ${{ env.ARTIFACT }}
 
