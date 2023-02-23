@@ -20,9 +20,8 @@ jobs:
           version: ${{ env.QT_VERSION }}
           install-deps: 'true'
 
-      - name: Install FUSE
-        run: |
-          sudo apt-get install fuse libfuse2
+      - name: Install packages
+        run: sudo apt-get install fuse libfuse2 libgstapp
     
       - name: Versions
         run: qmake -v
