@@ -32,7 +32,7 @@ jobs:
         run: |
           wget -nv -c https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
           chmod a+x linuxdeployqt-continuous-x86_64.AppImage
-    
+
       - name: Versions
         run: qmake -v
 
@@ -53,8 +53,8 @@ jobs:
         working-directory: ${{ env.SOURCE_DIR }}/build
         run: |
           cp ${{ env.SOURCE_DIR }}/emulator/QtNeonBtl ./usr/bin/
-          cp ${{ env.SOURCE_DIR }}/linux/qtneonbtl.desktop ./usr/share/applications/
-          ../linuxdeployqt-continuous-x86_64.AppImage ./usr/share/applications/qtneonbtl.desktop -appimage -no-translations
+          cp ${{ env.SOURCE_DIR }}/linux/* .
+          ../linuxdeployqt-continuous-x86_64.AppImage qtneonbtl.desktop -appimage -no-translations
           ls -l
           mv qtneonbtl-*.AppImage ${{ env.ARTIFACT }}
 

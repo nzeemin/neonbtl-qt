@@ -3,5 +3,5 @@ Type=Application
 Name=NeonBTL Qt
 Comment=NeonBTL emulator Qt version
 Exec=QtNeonBtl
-Icon=
+Icon=qtneonbtl.png
 Categories=Office;
