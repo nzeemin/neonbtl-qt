@@ -117,7 +117,7 @@ void invertImageColors(QImage& image)
     for (int i = 1; i < image.colorCount(); i++)
     {
         QColor color = QColor(image.color(i));
-        QColor invColor = QColor::fromRgb(255 - color.green(), 255 - color.red(), 255 - color.blue(), color.alpha());
+        QColor invColor = QColor::fromHsl(color.hslHue(), color.hslSaturation(), 255 - color.lightness(), color.alpha());
         image.setColor(i, invColor.rgb());
     }
 }
