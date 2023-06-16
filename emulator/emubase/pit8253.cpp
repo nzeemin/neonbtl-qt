@@ -1,4 +1,4 @@
-/*  This file is part of NEONBTL.
+﻿/*  This file is part of NEONBTL.
 NEONBTL is free software: you can redistribute it and/or modify it under the terms
 of the GNU Lesser General Public License as published by the Free Software Foundation,
 either version 3 of the License, or (at your option) any later version.
@@ -103,13 +103,13 @@ uint8_t PIT8253::Read(uint8_t address)
 
 void PIT8253::SetGate(uint8_t chan, bool gate)
 {
-    if (chan > 3) return;
+    if (chan >= 3) return;
     m_chan[chan].gate = gate;
 }
 
 bool PIT8253::GetOutput(uint8_t chan)
 {
-    if (chan > 3) return false;
+    if (chan >= 3) return false;
 
     return m_chan[chan].output;
 }

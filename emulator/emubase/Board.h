@@ -1,4 +1,4 @@
-/*  This file is part of NEONBTL.
+﻿/*  This file is part of NEONBTL.
     NEONBTL is free software: you can redistribute it and/or modify it under the terms
 of the GNU Lesser General Public License as published by the Free Software Foundation,
 either version 3 of the License, or (at your option) any later version.
@@ -51,6 +51,11 @@ enum NeonConfiguration
 #define TRACE_FLOPPY    0100  // Trace floppies
 #define TRACE_CPU      01000  // Trace CPU instructions
 #define TRACE_ALL    0177777  // Trace all
+
+// Emulator image constants
+#define NEONIMAGE_HEADER1 0x6E6F654E  // "Neon"
+#define NEONIMAGE_HEADER2 0x214C5442  // "BTL!"
+#define NEONIMAGE_VERSION 0x00010000  // 1.0
 
 // PIC 8259A flags
 #define PIC_MODE_ICW1      1  // Wait for ICW1 after RESET
@@ -141,6 +146,7 @@ public:  // Debug
     void        LoadRAMBank(int bank, const void* buffer);
 public:  // System control
     void        SetConfiguration(uint16_t conf);
+    uint16_t    GetConfiguration() const { return m_Configuration; }
     void        LoadROM(const uint8_t* pBuffer);  // Load 16 KB ROM image from the buffer
     void        Reset();  // Reset computer
     void        Tick50();           // Tick 50 Hz
@@ -149,6 +155,7 @@ public:  // System control
     bool        SystemFrame();  // Do one frame -- use for normal run
     void        UpdateKeyboardMatrix(const uint8_t matrix[8]);
     void        MouseMove(short dx, short dy, bool btnLeft, bool btnRight);
+    uint16_t    GetPrinterOutPort() const { return m_PPIBwr; }
 public:  // Floppy
     bool        AttachFloppyImage(int slot, LPCTSTR sFileName);
     void        DetachFloppyImage(int slot);
@@ -196,7 +203,6 @@ public:  // Memory
     uint16_t GetPortView(uint16_t address) const;
     // Read SEL register
     static uint16_t GetSelRegister() { return 0; }
-private:
     // Determine memory type for the given address - see ADDRTYPE_Xxx constants
     //   okHaltMode - processor mode (USER/HALT)
     //   okExec - true: read instruction for execution; false: read memory
@@ -215,7 +221,7 @@ private:  // Ports/devices: implementation
     uint8_t     m_PICRR;            // PIC interrupt request register
     uint8_t     m_PICMR;            // PIC mask register
     uint8_t     m_PPIAwr, m_PPIArd;
-    uint16_t    m_PPIB;             // 161032 Printer data - bits 0..7
+    uint8_t     m_PPIBwr, m_PPIBrd; // 161032 printer data (W) / flags (R)
     uint16_t    m_PPIC;             // 161034
     uint16_t    m_hdsdh;            // 161054 HD.SDH
     uint8_t     m_hdscnt;

@@ -46,8 +46,8 @@ CMotherboard::CMotherboard()
     m_pROM = static_cast<uint8_t*>(::calloc(16 * 1024, 1));
     m_pHDbuff = static_cast<uint8_t*>(::calloc(4 * 512, 1));
 
-    m_PPIAwr = m_PPIArd = 0;
-    m_PPIB = 11;  // IHLT EF1 EF0 - инверсные
+    m_PPIAwr = m_PPIArd = m_PPIBwr = 0;
+    m_PPIBrd = 11;  // IHLT EF1 EF0 - инверсные
     m_PPIC = 14;  // IHLT VIRQ - инверсные
     m_hdsdh = 0;
 
@@ -128,8 +128,8 @@ void CMotherboard::Reset()
     m_pCPU->SetDCLOPin(true);
     m_pCPU->SetACLOPin(true);
 
-    m_PPIAwr = m_PPIArd = 0;
-    m_PPIB = 11;  // IHLT EF1 EF0 - инверсные
+    m_PPIAwr = m_PPIArd = m_PPIBwr = 0;
+    m_PPIBrd = 11;  // IHLT EF1 EF0 - инверсные
     m_PPIC = 14;  // IHLT VIRQ - инверсные
     m_hdsdh = 0;
 
@@ -505,10 +505,23 @@ bool CMotherboard::SystemFrame()
             DoSound();
         }
 
-        if (m_ParallelOutCallback != nullptr && frameticks % 1000 == 0)
-        {
-            //TODO
-        }
+        //if (m_ParallelOutCallback != nullptr)
+        //{
+        //    if ((m_PPIAwr & 2) != 0 && (m_PPIBrd & 0x40) != 0)
+        //    {
+        //        // Strobe set, Printer Ack set => reset Printer Ack
+        //        m_PPIBrd &= ~0x40;
+        //        // Now printer waits for a next byte
+        //    }
+        //    else if ((m_PPIAwr & 2) == 0 && (m_PPIBrd & 0x40) == 0)
+        //    {
+        //        // Strobe reset, Printer Ack reset => byte is ready, print it
+        //        (*m_ParallelOutCallback)(m_PPIBwr);
+        //        // Set Printer Acknowledge
+        //        m_PPIBrd |= 0x40;
+        //        // Now the printer waits for Strobe
+        //    }
+        //}
     }
 
     return true;
@@ -580,11 +593,11 @@ uint16_t CMotherboard::GetWord(uint16_t address, bool okHaltMode, bool okExec)
         //TODO: What to do if okExec == true ?
         return GetPortWord(address);
     case ADDRTYPE_EMUL:
-        if ((m_PPIB & 1) == 1)  // EF0 inactive?
+        if ((m_PPIBrd & 1) == 1)  // EF0 inactive?
             m_HR[0] = address;
         else
             m_HR[1] = address;
-        m_PPIB &= ~1;  // set EF0 active
+        m_PPIBrd &= ~1;  // set EF0 active
         m_pCPU->SetHALTPin(true);
         res = GetRAMWord(offset & 07776);
         DebugLogFormat(_T("%c%06ho\tGETWORD %06ho EMUL -> %06ho\n"), HU_INSTRUCTION_PC, address, res);
@@ -615,11 +628,11 @@ uint8_t CMotherboard::GetByte(uint16_t address, bool okHaltMode)
         //TODO: What to do if okExec == true ?
         return GetPortByte(address);
     case ADDRTYPE_EMUL:
-        if ((m_PPIB & 1) == 1)  // EF0 inactive?
+        if ((m_PPIBrd & 1) == 1)  // EF0 inactive?
             m_HR[0] = address;
         else
             m_HR[1] = address;
-        m_PPIB &= ~1;  // set EF0 active
+        m_PPIBrd &= ~1;  // set EF0 active
         m_pCPU->SetHALTPin(true);
         resb = GetRAMByte(offset & 07777);
         DebugLogFormat(_T("%c%06ho\tGETBYTE %06ho EMUL %03ho\n"), HU_INSTRUCTION_PC, address, resb);
@@ -656,11 +669,11 @@ void CMotherboard::SetWord(uint16_t address, bool okHaltMode, uint16_t word)
     case ADDRTYPE_EMUL:
         DebugLogFormat(_T("%c%06ho\tSETWORD %06ho -> (%06ho) EMUL\n"), HU_INSTRUCTION_PC, word, address);
         SetRAMWord(offset & 07777, word);
-        if ((m_PPIB & 1) == 1)  // EF0 inactive?
+        if ((m_PPIBrd & 1) == 1)  // EF0 inactive?
             m_HR[0] = address;
         else
             m_HR[1] = address;
-        m_PPIB &= ~3;  // set EF1,EF0 active
+        m_PPIBrd &= ~3;  // set EF1,EF0 active
         m_pCPU->SetHALTPin(true);
         return;
     case ADDRTYPE_DENY:
@@ -692,11 +705,11 @@ void CMotherboard::SetByte(uint16_t address, bool okHaltMode, uint8_t byte)
     case ADDRTYPE_EMUL:
         DebugLogFormat(_T("%c%06ho\tSETBYTE %03o -> (%06ho) EMUL\n"), HU_INSTRUCTION_PC, byte, address);
         SetRAMByte(offset & 07777, byte);
-        if ((m_PPIB & 1) == 1)  // EF0 inactive?
+        if ((m_PPIBrd & 1) == 1)  // EF0 inactive?
             m_HR[0] = address;
         else
             m_HR[1] = address;
-        m_PPIB &= ~3;  // set EF1,EF0 active
+        m_PPIBrd &= ~3;  // set EF1,EF0 active
         m_pCPU->SetHALTPin(true);
         return;
     case ADDRTYPE_DENY:
@@ -789,11 +802,11 @@ uint16_t CMotherboard::GetPortWord(uint16_t address)
 
     case 0161010: case 0161012: case 0161014: case 0161016:
         resb = ProcessTimerRead(address);
-        DebugLogFormat(_T("%c%06ho\tGETPORT SND -> 0x%02hx\n"), HU_INSTRUCTION_PC, (uint16_t)resb);
+        DebugLogFormat(_T("%c%06ho\tGETPORT %06ho SND -> 0x%02hx\n"), HU_INSTRUCTION_PC, address, (uint16_t)resb);
         return resb;
     case 0161020: case 0161022: case 0161024: case 0161026:
         resb = ProcessTimerRead(address);
-        DebugLogFormat(_T("%c%06ho\tGETPORT SNL -> 0x%02hx\n"), HU_INSTRUCTION_PC, (uint16_t)resb);
+        DebugLogFormat(_T("%c%06ho\tGETPORT %06ho SNL -> 0x%02hx\n"), HU_INSTRUCTION_PC, address, (uint16_t)resb);
         return resb;
 
     case 0161030:  // PPIA
@@ -802,7 +815,7 @@ uint16_t CMotherboard::GetPortWord(uint16_t address)
         return result;
 
     case 0161032:  // PPIB
-        result = m_PPIB;
+        result = m_PPIBrd;
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho PPIB -> %06ho\n"), HU_INSTRUCTION_PC, address, result);
         return result;
 
@@ -897,7 +910,7 @@ uint16_t CMotherboard::GetPortWord(uint16_t address)
         chunk = (address >> 1) & 7;
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho HR%d -> %06ho\n"), HU_INSTRUCTION_PC, address, chunk, m_HR[chunk]);
         if (m_pCPU->IsHaltMode() && (chunk == 0 || chunk == 1))  // Чтение HR0 или HR1 в режиме HALT
-            m_PPIB |= 3;  // Снимаем EF0 и EF1
+            m_PPIBrd |= 3;  // Снимаем EF0 и EF1
         return m_HR[chunk];
 
     case 0161220:
@@ -946,7 +959,7 @@ uint16_t CMotherboard::GetPortView(uint16_t address) const
         return m_PICMR;
 
     case 0161032:  // PPIB
-        return m_PPIB;
+        return m_PPIBrd;
     case 0161034:  // PPIC
         return m_PPIC;
 
@@ -1064,21 +1077,26 @@ void CMotherboard::SetPortWord(uint16_t address, uint16_t word)
         break;
 
     case 0161030:  // PPIA
+#if !defined(PRODUCT)
         PrintBinaryValue(buffer, word);
         DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) PPIA %s\n"), HU_INSTRUCTION_PC, word, address, buffer + 12);
+#endif
         m_PPIAwr = word & 0xff;
         ProcessMouseWrite(word & 0x00f0);
         break;
     case 0161032:  // PPIB
         DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) PPIB\n"), HU_INSTRUCTION_PC, word, address);
+        m_PPIBwr = word & 0xff;
         break;
     case 0161034:  // PPIC
+#if !defined(PRODUCT)
         PrintBinaryValue(buffer, word);
         DebugLogFormat(_T("%c%06ho\tSETPORT %06ho -> (%06ho) PPIC %s%s%s\n"), HU_INSTRUCTION_PC, word, address, buffer + 12,
                 (word & 010) ? _T("") : _T(" VIRQ"),
                 (word & 4) ? _T("") : _T(" IHLT"));
+#endif
         m_PPIC = word & 0xff;
-        m_PPIB = (m_PPIB & ~8) | ((m_PPIC & 4) == 0 ? 0 : 8);  // PC2(IHLT) -> PB3
+        m_PPIBrd = (m_PPIBrd & ~8) | ((m_PPIC & 4) == 0 ? 0 : 8);  // PC2(IHLT) -> PB3
         m_pCPU->SetVIRQ((m_PPIC & 010) == 0);
         break;
     case 0161036:  // PPIP -- Parallel port mode control
@@ -1176,7 +1194,7 @@ void CMotherboard::SetPortWord(uint16_t address, uint16_t word)
             int chunk = (address >> 1) & 7;
             m_HR[chunk] = word;
             if (m_pCPU->IsHaltMode() && (chunk == 0 || chunk == 1))  // Запись HR0 или HR1 в режиме HALT
-                m_PPIB |= 3;  // Снимаем EF0 и EF1
+                m_PPIBrd |= 3;  // Снимаем EF0 и EF1
             break;
         }
 
@@ -1302,8 +1320,8 @@ void CMotherboard::UpdateInterrupts()
     SetPICInterrupt(1, m_pFloppyCtl->CheckInterrupt() || m_hdint);
     SetPICInterrupt(4, m_keyint);
     bool ioint = ((m_PICRR & ~m_PICMR) != 0);
-    m_PPIB = (m_PPIB & ~4) | (ioint ? 4 : 0);  // Update PB2(IOINT) signal
-    m_pCPU->SetHALTPin((m_PPIB & 11) != 11 || ioint);  // EF0 EF1, IHLT or IOINT
+    m_PPIBrd = (m_PPIBrd & ~4) | (ioint ? 4 : 0);  // Update PB2(IOINT) signal
+    m_pCPU->SetHALTPin((m_PPIBrd & 11) != 11 || ioint);  // EF0 EF1, IHLT or IOINT
 }
 
 // Get port value for Real Time Clock - ports 0161400..0161476 - КР512ВИ1 == MC146818
@@ -1357,21 +1375,33 @@ void CMotherboard::ProcessRtcWrite(uint16_t address, uint8_t byte)
 // Emulator image
 //  Offset Length
 //       0     32 bytes  - Header
-//      32    480 bytes  - Board status
-//     512     64 bytes  - CPU status
-//     576    448 bytes  - RESERVED
-//    1024   2048 bytes  - HD buffers 2K
-//    3072   1024 bytes  - RESERVED
-//    4096  16384 bytes  - ROM image 16K
+//      32    400 bytes  - Board status
+//     432     80 bytes  - CPU status
+//     512   2048 bytes  - HD buffers 2K
+//    2560    512 bytes  - RESERVED
+//    3072  16384 bytes  - ROM image 16K
+//   19456   1024 bytes  - RESERVED
 //   20480               - RAM image 512/1024/2048/4096 KB
 //
-//  Board status (448 bytes):
+//  Board status (400 bytes):
 //      32      4 bytes  - RAM size bytes
-//      36     28 bytes  - RESERVED
+//      36      6 bytes  - PIC
+//      42      4 bytes  - RESERVED
+//      46     10 bytes  - PPI
+//      56      8 bytes  - RESERVED
 //      64     32 bytes  - HR[8]
 //      96     32 bytes  - UR[8]
-//     128     64 bytes  - Timer
-//     192
+//     128      8 bytes  - RESERVED
+//     136      8 bytes  - HDD controller
+//     152      8 bytes  - RESERVED
+//     160     12 bytes  - Keyboard
+//     172      4 bytes  - RESERVED
+//     176      6 bytes  - Mouse
+//     182     10 bytes  - RESERVED
+//     192     60 bytes  - PIT8253 x 2
+//     256      4 bytes  - RESERVED
+//     256     64 bytes  - Timer
+//     320     80 bytes  - RESERVED
 //
 void CMotherboard::SaveToImage(uint8_t* pImage)
 {
@@ -1380,18 +1410,49 @@ void CMotherboard::SaveToImage(uint8_t* pImage)
     *pwImage++ = m_Configuration;
     memcpy(pwImage, &m_nRamSizeBytes, sizeof(m_nRamSizeBytes));  // 4 bytes
     pwImage += sizeof(m_nRamSizeBytes) / 2;
-    pwImage += 28 / 2;  // RESERVED
-    //TODO: PIC data
-    //TODO: PPIA, PPIB, PPIC data
+    *pwImage++ = m_PICflags;
+    *pwImage++ = m_PICRR;
+    *pwImage++ = m_PICMR;
+    pwImage += 4 / 2;  // RESERVED
+    *pwImage++ = m_PPIAwr;  *pwImage++ = m_PPIArd;
+    *pwImage++ = m_PPIBwr;  *pwImage++ = m_PPIBrd;
+    *pwImage++ = m_PPIC;
+    pwImage += 8 / 2;  // RESERVED
+    // HR / UR
     memcpy(pwImage, m_HR, sizeof(m_HR));  // 32 bytes
     pwImage += sizeof(m_HR) / 2;
     memcpy(pwImage, m_UR, sizeof(m_UR));  // 32 bytes
-    //pwImage += sizeof(m_UR) / 2;
-
+    pwImage += sizeof(m_UR) / 2;
+    pwImage += 8 / 2;  // RESERVED
+    // HDD controller
+    *pwImage++ = m_hdsdh;
+    *pwImage++ = m_hdscnt;
+    *pwImage++ = m_hdsnum;
+    *pwImage++ = m_hdcnum;
+    *pwImage++ = m_hdint;
+    *pwImage++ = m_nHDbuff;
+    *pwImage++ = m_nHDbuffpos;
+    *pwImage++ = m_HDbuffdir;
+    pwImage += 8 / 2;  // RESERVED
+    // Keyboard, mouse
+    pwImage = reinterpret_cast<uint16_t*>(pImage + 216);
+    memcpy(pwImage, m_keymatrix, sizeof(m_keymatrix));  // 8 bytes
+    pwImage += 8 / 2;
+    *pwImage++ = m_keypos;
+    *pwImage++ = m_keyint;
+    pwImage += 4 / 2;  // RESERVED
+    *pwImage++ = m_mousedx;
+    *pwImage++ = m_mousedy;
+    *pwImage++ = m_mousest;
+    pwImage += 10 / 2;  // RESERVED
+    // PIT8253 x 2
+    memcpy(pwImage, m_snd.m_chan, sizeof(m_snd.m_chan));  // 30 bytes
+    pwImage += 30 / 2;
+    memcpy(pwImage, m_snl.m_chan, sizeof(m_snl.m_chan));  // 30 bytes
     // Timer
     time_t tnow = time(0);
     struct tm* lnow = localtime(&tnow);
-    uint8_t* pImageTimer = pImage + 128;
+    uint8_t* pImageTimer = pImage + 256;
     *pImageTimer++ = (uint8_t)lnow->tm_sec;  // Seconds
     *pImageTimer++ = m_rtcalarmsec;
     *pImageTimer++ = (uint8_t)lnow->tm_min;  // Minutes
@@ -1409,11 +1470,13 @@ void CMotherboard::SaveToImage(uint8_t* pImage)
     memcpy(pImageTimer, m_rtcmemory, sizeof(m_rtcmemory));  // 50 bytes
 
     // CPU status
-    uint8_t* pImageCPU = pImage + 512;
+    uint8_t* pImageCPU = pImage + 432;
     m_pCPU->SaveToImage(pImageCPU);
-    //TODO: HD buffers 2K
+    // HD buffers 2K
+    uint8_t* pImageBuffer2K = pImage + 512;
+    memcpy(pImageBuffer2K, m_pHDbuff, 2048);
     // ROM
-    uint8_t* pImageRom = pImage + 4096;
+    uint8_t* pImageRom = pImage + 3072;
     memcpy(pImageRom, m_pROM, 16 * 1024);
     // RAM
     uint8_t* pImageRam = pImage + 20480;
@@ -1423,23 +1486,81 @@ void CMotherboard::LoadFromImage(const uint8_t* pImage)
 {
     // Board data
     const uint16_t* pwImage = reinterpret_cast<const uint16_t*>(pImage + 32);
+
+    // If the new configuration has different memory size, re-allocate the memory
     m_Configuration = *pwImage++;
-    memcpy(&m_nRamSizeBytes, pwImage, sizeof(m_nRamSizeBytes));  // 4 bytes
+    uint32_t nRamSizeKbytes = m_Configuration & NEON_COPT_RAMSIZE_MASK;
+    if (nRamSizeKbytes == 0)
+        nRamSizeKbytes = 512;
+    uint32_t newramsize = nRamSizeKbytes * 1024;
+    //memcpy(&newramsize, pwImage, sizeof(newramsize));  // 4 bytes
+    if (m_nRamSizeBytes != newramsize)
+    {
+        ::realloc(m_pRAM, newramsize);
+        m_nRamSizeBytes = newramsize;
+    }
     pwImage += sizeof(m_nRamSizeBytes) / 2;
-    pwImage += 28 / 2;  // RESERVED
+    m_PICflags = *pwImage++;
+    m_PICRR = (uint8_t) * pwImage++;
+    m_PICMR = (uint8_t) * pwImage++;
+    pwImage += 4 / 2;  // RESERVED
+    m_PPIAwr = (uint8_t) * pwImage++;  m_PPIArd = (uint8_t) * pwImage++;
+    m_PPIBwr = (uint8_t) * pwImage++;  m_PPIBrd = (uint8_t) * pwImage++;
+    m_PPIC = *pwImage++;
+    pwImage += 8 / 2;  // RESERVED
+    // HR / UR
     memcpy(m_HR, pwImage, sizeof(m_HR));  // 32 bytes
     pwImage += sizeof(m_HR) / 2;
     memcpy(m_UR, pwImage, sizeof(m_UR));  // 32 bytes
-    //pwImage += sizeof(m_UR) / 2;
-
-    //TODO: Timer
+    pwImage += 8 / 2;  // RESERVED
+    // HDD controller
+    m_hdsdh = *pwImage++;
+    m_hdscnt = (uint8_t) * pwImage++;
+    m_hdsnum = (uint8_t) * pwImage++;
+    m_hdcnum = *pwImage++;
+    m_hdint = *pwImage++ != 0;
+    m_nHDbuff = (uint8_t) * pwImage++;
+    m_nHDbuffpos = *pwImage++;
+    m_HDbuffdir = *pwImage++ != 0;
+    pwImage += 8 / 2;  // RESERVED
+    // Keyboard, mouse
+    pwImage = reinterpret_cast<const uint16_t*>(pImage + 216);
+    memcpy(m_keymatrix, pwImage, sizeof(m_keymatrix));  // 8 bytes
+    pwImage += 8 / 2;
+    m_keypos = *pwImage++;
+    m_keyint = *pwImage++ != 0;
+    pwImage += 4 / 2;  // RESERVED
+    m_mousedx = (uint8_t) * pwImage++;
+    m_mousedy = (uint8_t) * pwImage++;
+    m_mousest = (uint8_t) * pwImage++;
+    pwImage += 10 / 2;  // RESERVED
+    // PIT8253 x 2
+    memcpy(m_snd.m_chan, pwImage, sizeof(m_snd.m_chan));  // 30 bytes
+    pwImage += 30 / 2;
+    memcpy(m_snl.m_chan, pwImage, sizeof(m_snl.m_chan));  // 30 bytes
+    // Timer
+    const uint8_t* pImageTimer = pImage + 256;
+    pImageTimer++;  // Seconds
+    m_rtcalarmsec = *pImageTimer++;
+    pImageTimer++;  // Minutes
+    m_rtcalarmmin = *pImageTimer++;
+    pImageTimer++;  // Hours
+    m_rtcalarmhour = *pImageTimer++;
+    pImageTimer++;  // Day of week
+    pImageTimer++;  // Day of month
+    pImageTimer++;  // Month
+    pImageTimer++;  // Year
+    pImageTimer += 4;
+    memcpy(m_rtcmemory, pImageTimer, sizeof(m_rtcmemory));  // 50 bytes
 
     // CPU status
-    const uint8_t* pImageCPU = pImage + 512;
+    const uint8_t* pImageCPU = pImage + 432;
     m_pCPU->LoadFromImage(pImageCPU);
-    //TODO: HD buffers 2K
+    // HD buffers 2K
+    const uint8_t* pImageBuffer2K = pImage + 512;
+    memcpy(m_pHDbuff, pImageBuffer2K, 2048);
     // ROM
-    const uint8_t* pImageRom = pImage + 4096;
+    const uint8_t* pImageRom = pImage + 3072;
     memcpy(m_pROM, pImageRom, 16 * 1024);
     // RAM
     const uint8_t* pImageRam = pImage + 20480;
@@ -1455,18 +1576,18 @@ void CMotherboard::DoSound()
         return;
 
     uint16_t sound =
-        (m_snl.GetOutput(0) ? 1 : 0) +
-        (m_snl.GetOutput(1) ? 1 : 0) +
-        (m_snl.GetOutput(2) ? 1 : 0);
+        (m_snl.GetOutput(0) ? 0 : 1) +
+        (m_snl.GetOutput(1) ? 0 : 1) +
+        (m_snl.GetOutput(2) ? 0 : 1);
 
     switch (sound)
     {
     case 3:
-        sound = 0x1fff;  break;
+        sound = 0x7fff;  break;
     case 2:
-        sound = 0x1555;  break;
+        sound = 0x5555;  break;
     case 1:
-        sound = 0x0aaa;  break;
+        sound = 0x2AAA;  break;
     }
 
     (*m_SoundGenCallback)(sound, sound);
@@ -1493,12 +1614,12 @@ void CMotherboard::SetParallelOutCallback(PARALLELOUTCALLBACK outcallback)
 {
     if (outcallback == nullptr)  // Reset callback
     {
-        //m_Port177101 &= ~2;  // Reset OnLine flag
+        m_PPIArd &= ~0x10;  // Reset Printer flag
         m_ParallelOutCallback = nullptr;
     }
     else
     {
-        //m_Port177101 |= 2;  // Set OnLine flag
+        m_PPIArd |= 0x10;  // Set Printer flag
         m_ParallelOutCallback = outcallback;
     }
 }
