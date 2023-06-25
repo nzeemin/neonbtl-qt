@@ -222,8 +222,8 @@ void MainWindow::updateMenu()
     ui->actionDrivesFloppy1->setIcon(QIcon(
             g_pBoard->IsFloppyImageAttached(1) ? ":/images/iconFloppy.svg" : ":/images/iconFloppySlot.svg" ));
 
-//    ui->actionDrivesHard->setIcon(QIcon(
-//            g_pBoard->IsHardImageAttached() ? ":/images/iconHdd.svg" : ":/images/iconHddSlot.svg" ));
+    ui->actionDrivesHard->setIcon(QIcon(
+            g_pBoard->IsHardImageAttached() ? ":/images/iconHdd.svg" : ":/images/iconHddSlot.svg" ));
 
     ui->actionDebugConsoleView->setChecked(m_console->isVisible());
     ui->actionDebugDebugView->setChecked(m_dockDebug->isVisible());
@@ -582,8 +582,8 @@ bool MainWindow::attachHardDrive(const QString & strFileName)
     QFileInfo fi(strFileName);
     QString strFullName(fi.canonicalFilePath());  // Get absolute file name
 
-    LPCTSTR sFileName = qPrintable(strFullName);
-    if (!g_pBoard->AttachHardImage(sFileName))
+    QByteArray baFullName = strFullName.toLocal8Bit();
+    if (!g_pBoard->AttachHardImage(baFullName.constData()))
         return false;
 
     Settings_SetHardFilePath(strFullName);
