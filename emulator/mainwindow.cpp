@@ -557,46 +557,45 @@ void MainWindow::detachFloppy(int slot)
 
 void MainWindow::emulatorHardDrive()
 {
-//    if (g_pBoard->IsHardImageAttached())
-//    {
-//        detachHardDrive();
-//    }
-//    else
-//    {
-//        // Select HDD disk image
-//        QFileDialog dlg;
-//        dlg.setNameFilter(tr("NEON HDD images (*.img)"));
-//        if (dlg.exec() == QDialog::Rejected)
-//            return;
+    if (g_pBoard->IsHardImageAttached())
+    {
+        detachHardDrive();
+    }
+    else
+    {
+        // Select HDD disk image
+        QFileDialog dlg;
+        dlg.setNameFilter(tr("Neon HDD images (*.img)"));
+        if (dlg.exec() == QDialog::Rejected)
+            return;
 
-//        QString strFileName = dlg.selectedFiles().at(0);
-//        if (! attachHardDrive(strFileName))
-//        {
-//            AlertWarning(tr("Failed to attach hard drive image."));
-//            return;
-//        }
-//    }
+        QString strFileName = dlg.selectedFiles().at(0);
+        if (! attachHardDrive(strFileName))
+        {
+            AlertWarning(tr("Failed to attach hard drive image."));
+            return;
+        }
+    }
 }
-bool MainWindow::attachHardDrive(const QString & /*strFileName*/)
+bool MainWindow::attachHardDrive(const QString & strFileName)
 {
-//    QFileInfo fi(strFileName);
-//    QString strFullName(fi.canonicalFilePath());  // Get absolute file name
+    QFileInfo fi(strFileName);
+    QString strFullName(fi.canonicalFilePath());  // Get absolute file name
 
-//    LPCTSTR sFileName = qPrintable(strFullName);
-//    if (!g_pBoard->AttachHardImage(sFileName))
-//        return false;
+    LPCTSTR sFileName = qPrintable(strFullName);
+    if (!g_pBoard->AttachHardImage(sFileName))
+        return false;
 
-//    Settings_SetHardFilePath(strFullName);
+    Settings_SetHardFilePath(strFullName);
 
-//    updateMenu();
+    updateMenu();
 
-//    return true;
-    return false;
+    return true;
 }
 void MainWindow::detachHardDrive()
 {
-//    g_pBoard->DetachHardImage();
-//    Settings_SetHardFilePath(nullptr);
+    g_pBoard->DetachHardImage();
+    Settings_SetHardFilePath(nullptr);
 }
 
 void MainWindow::debugConsoleView()

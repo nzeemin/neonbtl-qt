@@ -133,6 +133,7 @@
    <addaction name="actionDrivesFloppy1"/>
    <addaction name="separator"/>
    <addaction name="actionDrivesHard"/>
+   <addaction name="separator"/>
    <addaction name="actionSoundEnabled"/>
    <addaction name="actionFileScreenshot"/>
   </widget>
@@ -218,7 +219,7 @@
     <string>HDD</string>
    </property>
    <property name="visible">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
   </action>
   <action name="actionFileScreenshot">

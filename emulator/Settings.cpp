@@ -36,31 +36,13 @@ QString Settings_GetFloppyFilePath(int slot)
     return value.toString();
 }
 
-void Settings_SetCartridgeFilePath(int slot, const QString &sFilePath)
+void Settings_SetHardFilePath(const QString &sFilePath)
 {
-    char bufValueName[] = "Cartridge1";
-    bufValueName[9] = slot + '0';
-    Global_getSettings()->setValue(bufValueName, sFilePath);
+    Global_getSettings()->setValue("Hard", sFilePath);
 }
-QString Settings_GetCartridgeFilePath(int slot)
+QString Settings_GetHardFilePath()
 {
-    char bufValueName[] = "Cartridge1";
-    bufValueName[9] = slot + '0';
-    QVariant value = Global_getSettings()->value(bufValueName, "");
-    return value.toString();
-}
-
-void Settings_SetHardFilePath(int slot, const QString &sFilePath)
-{
-    char bufValueName[] = "Hard1";
-    bufValueName[4] = slot + '0';
-    Global_getSettings()->setValue(bufValueName, sFilePath);
-}
-QString Settings_GetHardFilePath(int slot)
-{
-    char bufValueName[] = "Hard1";
-    bufValueName[4] = slot + '0';
-    QVariant value = Global_getSettings()->value(bufValueName, "");
+    QVariant value = Global_getSettings()->value("Hard", "");
     return value.toString();
 }
 

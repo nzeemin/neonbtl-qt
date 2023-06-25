@@ -192,11 +192,9 @@ void ParseCommandLine(int argc, char *argv[])
                 int slot = option[4].toLatin1() - '0';
                 Settings_SetFloppyFilePath(slot, option.mid(6));
             }
-            else if (option.startsWith("hard") && option.length() > 6 && // "/hardN:filePath", N=1..2
-                    option[4] >= '1' && option[4] <= '2' && option[5] == ':')
+            else if (option.startsWith("hard:") && option.length() > 5) // "/hard:filePath", N=1..2
             {
-                int slot = option[4].toLatin1() - '0';
-                Settings_SetHardFilePath(slot, option.mid(6));
+                Settings_SetHardFilePath(option.mid(5));
             }
             //TODO
         }
