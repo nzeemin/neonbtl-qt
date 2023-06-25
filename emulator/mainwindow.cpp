@@ -196,7 +196,7 @@ void MainWindow::restoreSettings()
     ui->actionSoundEnabled->setChecked(Settings_GetSound());
     m_debug->updateWindowText();
     m_disasm->updateWindowText();
-//    m_memory->updateWindowText();
+    m_memory->updateWindowText();
 }
 
 void MainWindow::updateMenu()

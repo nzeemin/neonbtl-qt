@@ -14,11 +14,24 @@
 #include "qdialogs.h"
 
 
-//////////////////////////////////////////////////////////////////////
+enum MemoryViewMode
+{
+    MEMMODE_CPU = 0,   // CPU memory
+    MEMMODE_HALT = 1,  // HALT mode memory
+    MEMMODE_USER = 2,  // USER mode memory
+    MEMMODE_LAST = 2,  // Last mode number
+};
+
+static const char * MemoryView_ModeNames[] =
+{
+    "CPU", "HALT", "USER"
+};
 
 
 QMemoryView::QMemoryView()
 {
+    m_Mode = Settings_GetDebugMemoryMode();
+    if (m_Mode > MEMMODE_LAST) m_Mode = MEMMODE_LAST;
     m_ByteMode = Settings_GetDebugMemoryByte();
     m_wBaseAddress = Settings_GetDebugMemoryAddress();
     m_cyLineMemory = 0;
@@ -67,6 +80,19 @@ void QMemoryView::updateScrollPos()
     m_scrollbar->setValue(m_wBaseAddress);
 }
 
+static const char * GetMemoryModeName(int mode)
+{
+    if (mode < 0 || mode > MEMMODE_LAST)
+        return "UKWN";  // Unknown mode
+    return MemoryView_ModeNames[mode];
+}
+
+void QMemoryView::updateWindowText()
+{
+    QString buffer = tr("Memory - %1").arg(GetMemoryModeName(m_Mode));
+    parentWidget()->setWindowTitle(buffer);
+}
+
 void QMemoryView::updateData()
 {
 }
@@ -85,9 +111,35 @@ void QMemoryView::contextMenuEvent(QContextMenuEvent *event)
     QMenu menu(this);
     menu.addAction(tr("Go to Address..."), this, SLOT(gotoAddress()));
     menu.addSeparator();
+
+    for (int mode = 0; mode <= MEMMODE_LAST; mode++)
+    {
+        const char * modeName = MemoryView_ModeNames[mode];
+        QAction * action = menu.addAction(modeName, this, SLOT(changeMemoryMode()));
+        action->setCheckable(true);
+        action->setData(mode);
+        if (m_Mode == mode)
+            action->setChecked(true);
+    }
+
+    menu.addSeparator();
     menu.addAction(tr("Words / Bytes"), this, SLOT(changeWordByteMode()));
 
     menu.exec(event->globalPos());
+}
+
+void QMemoryView::changeMemoryMode()
+{
+    QAction * action = qobject_cast<QAction*>(sender());
+    if (action == nullptr) return;
+    int mode = action->data().toInt();
+    if (mode < 0 || mode > MEMMODE_LAST) return;
+
+    m_Mode = mode;
+    Settings_SetDebugMemoryMode(m_Mode);
+
+    repaint();
+    updateWindowText();
 }
 
 void QMemoryView::changeWordByteMode()
@@ -140,6 +192,41 @@ void QMemoryView::scrollValueChanged()
     this->repaint();
 }
 
+quint16 QMemoryView::getWordFromMemory(quint16 address, bool& okValid, int& addrtype, quint16& wChanged)
+{
+    bool okHalt;
+    switch (m_Mode)
+    {
+    default:
+    case MEMMODE_CPU:
+        okHalt = g_pBoard->GetCPU()->IsHaltMode();
+        break;
+    case MEMMODE_HALT:
+        okHalt = true;
+        break;
+    case MEMMODE_USER:
+        okHalt = false;
+        break;
+    }
+
+    quint32 offset;
+    addrtype = g_pBoard->TranslateAddress(address, okHalt, false, &offset);
+    okValid = (addrtype != ADDRTYPE_IO) && (addrtype != ADDRTYPE_DENY);
+    if (!okValid)
+        return 0;
+
+    if (addrtype == ADDRTYPE_ROM)
+    {
+        wChanged = 0;
+        return g_pBoard->GetROMWord((uint16_t)offset);
+    }
+    else
+    {
+        wChanged = Emulator_GetChangeRamStatus(offset);
+        return g_pBoard->GetRAMWordView(offset);
+    }
+}
+
 void QMemoryView::paintEvent(QPaintEvent * /*event*/)
 {
     if (g_pBoard == nullptr) return;
@@ -159,9 +246,6 @@ void QMemoryView::paintEvent(QPaintEvent * /*event*/)
     QColor colorMemoryRom = Common_GetColorShifted(palette(), COLOR_MEMORYROM);
     QColor colorMemoryIO = Common_GetColorShifted(palette(), COLOR_MEMORYIO);
     QColor colorMemoryNA = Common_GetColorShifted(palette(), COLOR_MEMORYNA);
-
-    CProcessor* pDebugPU = g_pBoard->GetCPU();
-    ASSERT(pDebugPU != nullptr);
 
     m_cyLineMemory = cyLine;
 
@@ -188,17 +272,12 @@ void QMemoryView::paintEvent(QPaintEvent * /*event*/)
 
         for (int j = 0; j < 8; j++)    // Draw words as octal value
         {
-            // Get word from memory
-            quint16 word = 0;
             int addrtype;
-            bool okHalt = false;
+            bool okValid = false;
             quint16 wChanged = 0;
+            quint16 word = getWordFromMemory(address, okValid, addrtype, wChanged);
 
-            okHalt = pDebugPU->IsHaltMode();
-            word = g_pBoard->GetWordView(address, okHalt, false, &addrtype);
-            wChanged = Emulator_GetChangeRamStatus(address);
-
-            if ((addrtype & (ADDRTYPE_IO | ADDRTYPE_DENY)) == 0)
+            if (okValid)
             {
                 if (addrtype == ADDRTYPE_ROM)
                     painter.setPen(colorMemoryRom);
@@ -214,7 +293,7 @@ void QMemoryView::paintEvent(QPaintEvent * /*event*/)
                 else
                     DrawOctalValue(painter, x, y, word);
             }
-            else
+            else  // No value
             {
                 if (addrtype == ADDRTYPE_IO)
                 {
@@ -268,6 +347,18 @@ void QMemoryView::keyPressEvent(QKeyEvent *event)
 {
     switch (event->key())
     {
+    case Qt::Key_Space:
+        if (event->isAutoRepeat()) return;
+        event->accept();
+        if (m_Mode == MEMMODE_LAST)
+            m_Mode = 0;
+        else
+            m_Mode++;
+        Settings_SetDebugMemoryMode(m_Mode);
+        this->repaint();
+        updateWindowText();
+        break;
+
     case Qt::Key_G:
         event->accept();
         gotoAddress();

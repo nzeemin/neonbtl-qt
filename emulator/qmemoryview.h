@@ -14,8 +14,10 @@ public:
     ~QMemoryView();
 
     void updateData();
+    void updateWindowText();
 
 public slots:
+    void changeMemoryMode();
     void changeWordByteMode();
     void gotoAddress();
     void scrollBy(qint16 delta);
@@ -30,11 +32,13 @@ protected:
     void wheelEvent(QWheelEvent *);
 
     void updateScrollPos();
+    quint16 getWordFromMemory(quint16 address, bool& okValid, int& addrtype, quint16& wChanged);
 
 protected slots:
     void scrollValueChanged();
 
 private:
+    int m_Mode;
     bool m_ByteMode;  // false - word mode, true - byte mode
     unsigned short m_wBaseAddress;
     int m_cyLineMemory;  // Line height in pixels
