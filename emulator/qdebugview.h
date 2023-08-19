@@ -93,6 +93,8 @@ public:
 
     virtual void updateData();
     virtual DebugCtrlHitTest hitTest(int x, int y);
+
+protected:
     void contextMenuEvent(QContextMenuEvent *event);
 
 protected:
@@ -118,7 +120,11 @@ class QDebugBreakpointsCtrl : public QDebugCtrl
 public:
     QDebugBreakpointsCtrl(QDebugView *debugView);
 
+public slots:
+    void removeAllBreakpoints();
+
 protected:
+    void contextMenuEvent(QContextMenuEvent *event);
     void paintEvent(QPaintEvent *event);
 };
 

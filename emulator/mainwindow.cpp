@@ -74,6 +74,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QVBoxLayout *vboxlayout = new QVBoxLayout;
     vboxlayout->setMargin(4);
     vboxlayout->setSpacing(4);
+    vboxlayout->addWidget(ui->mainToolBar, 0, Qt::AlignTop);
     vboxlayout->addWidget(m_screen);
     vboxlayout->addWidget(m_keyboard);
     ui->centralWidget->setLayout(vboxlayout);

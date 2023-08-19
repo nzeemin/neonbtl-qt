@@ -5,6 +5,7 @@
 #include <QStyleOptionFocusRect>
 #include <QToolBar>
 #include "main.h"
+#include "mainwindow.h"
 #include "qdebugview.h"
 #include "Emulator.h"
 #include "emubase/Emubase.h"
@@ -484,6 +485,18 @@ void QDebugBreakpointsCtrl::paintEvent(QPaintEvent * /*event*/)
         y += cyLine;
         pbps++;
     }
+}
+
+void QDebugBreakpointsCtrl::contextMenuEvent(QContextMenuEvent *event)
+{
+    QMenu menu(this);
+    menu.addAction(tr("Remove All Breakpoints"), this, SLOT(removeAllBreakpoints()));
+    menu.exec(event->globalPos());
+}
+
+void QDebugBreakpointsCtrl::removeAllBreakpoints()
+{
+    Global_getMainWindow()->debugRemoveAllBreakpoints();
 }
 
 //////////////////////////////////////////////////////////////////////
