@@ -34,6 +34,10 @@ jobs:
           mkdir -p ${{ env.SOURCE_DIR }}/build/usr/bin
           mkdir -p ${{ env.SOURCE_DIR }}/build/usr/share
           mkdir -p ${{ env.SOURCE_DIR }}/build/usr/share/applications
+          mkdir -p ${{ env.SOURCE_DIR }}/build/usr/icons
+          mkdir -p ${{ env.SOURCE_DIR }}/build/usr/icons/hicolor
+          mkdir -p ${{ env.SOURCE_DIR }}/build/usr/icons/hicolor/256x256
+          mkdir -p ${{ env.SOURCE_DIR }}/build/usr/icons/hicolor/256x256/apps
 
       - name: Build
         run: |
@@ -45,8 +49,9 @@ jobs:
         working-directory: ${{ env.SOURCE_DIR }}/build
         run: |
           cp ${{ env.SOURCE_DIR }}/emulator/QtNeonBtl ./usr/bin/
-          cp ${{ env.SOURCE_DIR }}/linux/qtneonbtl.png .
-          ../linuxdeployqt-continuous-x86_64.AppImage ${{ env.SOURCE_DIR }}/linux/qtneonbtl.desktop -appimage
+          cp ${{ env.SOURCE_DIR }}/linux/qtneonbtl.desktop ${{ env.SOURCE_DIR }}/build/usr/share/applications/
+          cp ${{ env.SOURCE_DIR }}/linux/qtneonbtl.png ./usr/icons/hicolor/256x256/apps/
+          ../linuxdeployqt-continuous-x86_64.AppImage usr/share/applications/qtneonbtl.desktop -appimage -extra-plugins=iconengines
           ls -l *.AppImage
 
       - name: Linux artefact
