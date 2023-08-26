@@ -8,7 +8,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -16,9 +16,9 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
-          version: ${{ env.QT_VERSION }}
-          target: desktop
-          modules: qtmultimedia
+          version: '${{ env.QT_VERSION }}'
+          target: 'desktop'
+          modules: 'qtmultimedia'
           install-deps: 'true'
 
       - name: Install packages
