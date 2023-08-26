@@ -18,14 +18,7 @@ jobs:
         with:
           version: '${{ env.QT_VERSION }}'
           target: 'desktop'
-          modules: 'qtmultimedia'
           install-deps: 'true'
-
-      - name: Install packages
-        run: |
-          sudo apt-get install fuse libfuse2
-          sudo add-apt-repository universe
-          sudo apt-get install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev
 
       - name: Get linuxdeployqt
         run: |
@@ -57,7 +50,7 @@ jobs:
           ls -l *.AppImage
 
       - name: Linux artefact
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v3
         with:
           name: AppImage
           path: ${{ env.SOURCE_DIR }}/build/*.AppImage
