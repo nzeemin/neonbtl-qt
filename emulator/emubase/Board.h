@@ -35,9 +35,11 @@ enum NeonConfiguration
 
 // TranslateAddress result code
 #define ADDRTYPE_RAM     0  // RAM
-#define ADDRTYPE_ROM     1  // ROM
-#define ADDRTYPE_IO      4  // I/O port
-#define ADDRTYPE_EMUL    8  // I/O port emulation, USER mode only
+#define ADDRTYPE_RAM2    1  // RAM with masking 2bit/pixel on write
+#define ADDRTYPE_RAM4    2  // RAM with masking 4bit/pixel on write
+#define ADDRTYPE_ROM     4  // ROM 
+#define ADDRTYPE_IO     16  // I/O port
+#define ADDRTYPE_EMUL   32  // I/O port emulation, USER mode only
 #define ADDRTYPE_DENY  128  // Access denied
 
 //floppy debug
@@ -103,14 +105,14 @@ public:
     uint8_t     Read(uint8_t address);
     void        SetGate(uint8_t chan, bool gate);
     void        Tick();
-    bool        GetOutput(uint8_t chan);
+    bool        GetOutput(uint8_t chan) const;
 private:
     void        Tick(uint8_t channel);
 };
 
 //////////////////////////////////////////////////////////////////////
 
-// Souz-Neon computer
+// Soyuz-Neon computer
 class CMotherboard
 {
 public:  // Construct / destruct
@@ -133,8 +135,12 @@ private:  // Memory
 public:  // Memory access
     uint16_t    GetRAMWord(uint32_t offset) const;
     uint8_t     GetRAMByte(uint32_t offset) const;
-    void        SetRAMWord(uint32_t offset, uint16_t word);
-    void        SetRAMByte(uint32_t offset, uint8_t byte);
+    void        SetRAMWord(uint32_t offset, uint16_t word) { *((uint16_t*)(m_pRAM + offset)) = word; }
+    void        SetRAMWord2(uint32_t offset, uint16_t word);
+    void        SetRAMWord4(uint32_t offset, uint16_t word);
+    void        SetRAMByte(uint32_t offset, uint8_t byte) { m_pRAM[offset] = byte; }
+    void        SetRAMByte2(uint32_t offset, uint8_t byte);
+    void        SetRAMByte4(uint32_t offset, uint8_t byte);
     uint16_t    GetROMWord(uint16_t offset) const;
     uint8_t     GetROMByte(uint16_t offset) const;
     uint32_t    GetRamSizeBytes() const { return m_nRamSizeBytes; }
@@ -189,11 +195,11 @@ public:  // Memory
     // Read word
     uint16_t GetWord(uint16_t address, bool okHaltMode, bool okExec);
     // Write word
-    void SetWord(uint16_t address, bool okHaltMode, uint16_t word);
+    void SetWord(uint16_t address, bool okHaltMode, uint16_t word, bool isRMW = false);
     // Read byte
     uint8_t GetByte(uint16_t address, bool okHaltMode);
     // Write byte
-    void SetByte(uint16_t address, bool okHaltMode, uint8_t byte);
+    void SetByte(uint16_t address, bool okHaltMode, uint8_t byte, bool isRMW = false);
     // Read word from memory for video renderer and debugger
     uint8_t GetRAMByteView(uint32_t offset) const;
     uint16_t GetRAMWordView(uint32_t offset) const;
@@ -249,7 +255,7 @@ private:
     uint8_t     ProcessTimerRead(uint16_t address);
     void        ProcessKeyboardWrite(uint8_t byte);
     void        ProcessMouseWrite(uint8_t byte);
-    void        DoSound();
+    void        DoSound(uint16_t s0, uint16_t s1, uint16_t s2);
 private:
     const uint16_t* m_CPUbps;  // CPU breakpoint list, ends with 177777 value
     uint32_t    m_dwTrace;  // Trace flags

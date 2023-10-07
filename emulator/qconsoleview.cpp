@@ -353,7 +353,7 @@ void QConsoleView::cmdSetMemoryAtAddress(const ConsoleCommandParams & params)
 
     int addrtype;
     g_pBoard->GetWordView(address, okHaltMode, false, &addrtype);
-    if (addrtype != ADDRTYPE_RAM)
+    if (addrtype > ADDRTYPE_RAM4)
     {
         print(_T("  Can't change memory value for this memory type.\r\n"));
         return;

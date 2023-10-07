@@ -59,10 +59,6 @@ CMotherboard::CMotherboard()
     m_PICRR = m_PICMR = 0;
     m_PICflags = PIC_MODE_ICW1;
 
-    m_snd.SetGate(0, true);
-    m_snd.SetGate(1, true);
-    m_snd.SetGate(2, true);
-
     ::memset(m_keymatrix, 0, sizeof(m_keymatrix));
     m_keyint = false;
     m_keypos = 0;
@@ -289,13 +285,35 @@ uint8_t CMotherboard::GetRAMByte(uint32_t offset) const
 {
     return m_pRAM[offset];
 }
-void CMotherboard::SetRAMWord(uint32_t offset, uint16_t word)
+void CMotherboard::SetRAMWord2(uint32_t offset, uint16_t word)
 {
-    *((uint16_t*)(m_pRAM + offset)) = word;
+    uint16_t* p = (uint16_t*)(m_pRAM + offset);
+    uint16_t mask =
+        ((word & 0x0003) == 0 ? 0 : 0x0003) | ((word & 0x000C) == 0 ? 0 : 0x000C) |
+        ((word & 0x0030) == 0 ? 0 : 0x0030) | ((word & 0x00C0) == 0 ? 0 : 0x00C0) |
+        ((word & 0x0300) == 0 ? 0 : 0x0300) | ((word & 0x0C00) == 0 ? 0 : 0x0C00) |
+        ((word & 0x3000) == 0 ? 0 : 0x3000) | ((word & 0xC000) == 0 ? 0 : 0xC000);
+    *p = (word & mask) | (*p & ~mask);
 }
-void CMotherboard::SetRAMByte(uint32_t offset, uint8_t byte)
+void CMotherboard::SetRAMWord4(uint32_t offset, uint16_t word)
 {
-    m_pRAM[offset] = byte;
+    uint16_t* p = (uint16_t*)(m_pRAM + offset);
+    uint16_t mask =
+        ((word & 0x000F) == 0 ? 0 : 0x000F) | ((word & 0x00F0) == 0 ? 0 : 0x00F0) |
+        ((word & 0x0F00) == 0 ? 0 : 0x0F00) | ((word & 0xF000) == 0 ? 0 : 0xF000);
+    *p = (word & mask) | (*p & ~mask);
+}
+void CMotherboard::SetRAMByte2(uint32_t offset, uint8_t byte)
+{
+    uint8_t mask =
+        ((byte & 0x03) == 0 ? 0 : 0x03) | ((byte & 0x0C) == 0 ? 0 : 0x0C) |
+        ((byte & 0x30) == 0 ? 0 : 0x30) | ((byte & 0xC0) == 0 ? 0 : 0xC0);
+    m_pRAM[offset] = (byte & mask) | (m_pRAM[offset] & ~mask);
+}
+void CMotherboard::SetRAMByte4(uint32_t offset, uint8_t byte)
+{
+    uint8_t mask = ((byte & 0x0F) == 0 ? 0 : 0x0F) | ((byte & 0xF0) == 0 ? 0 : 0xF0);
+    m_pRAM[offset] = (byte & mask) | (m_pRAM[offset] & ~mask);
 }
 
 uint16_t CMotherboard::GetROMWord(uint16_t offset) const
@@ -341,22 +359,22 @@ void CMotherboard::Tick50()  // 50 Hz timer
 
 void CMotherboard::TimerTick() // Timer Tick - 2 MHz
 {
+    m_snd.SetGate(0, true);
+    m_snd.SetGate(1, true);
+    m_snd.SetGate(2, true);
     m_snd.Tick();
 
     m_snl.SetGate(0, m_snd.GetOutput(0));
     m_snl.SetGate(1, m_snd.GetOutput(1));
     m_snl.SetGate(2, m_snd.GetOutput(2));
-
     m_snl.Tick();
 }
-
 // address = 0161010..0161026
 void CMotherboard::ProcessTimerWrite(uint16_t address, uint8_t byte)
 {
     PIT8253& pit = (address & 020) ? m_snl : m_snd;
     pit.Write((address >> 1) & 3, byte);
 }
-
 // address = 0161010..0161026
 uint8_t CMotherboard::ProcessTimerRead(uint16_t address)
 {
@@ -470,6 +488,7 @@ bool CMotherboard::SystemFrame()
 {
     const int soundSamplesPerFrame = SOUNDSAMPLERATE / 25;
     int soundBrasErr = 0;
+    int snl0 = 0, snl1 = 0, snl2 = 0, soundTicks = 0, snd0 = 0, snd1 = 0, snd2 = 0;//DEBUG
 
     for (int frameticks = 0; frameticks < 20000; frameticks++)
     {
@@ -491,7 +510,16 @@ bool CMotherboard::SystemFrame()
             }
 
             if ((procticks & 3) == 3)  // Every 4th tick
+            {
                 TimerTick();
+                //snd0 += m_snd.GetOutput(0) ? 1 : 0;
+                //snd1 += m_snd.GetOutput(1) ? 1 : 0;
+                //snd2 += m_snd.GetOutput(2) ? 1 : 0;
+                snl0 += m_snl.GetOutput(0) ? 1 : 0;
+                snl1 += m_snl.GetOutput(1) ? 1 : 0;
+                snl2 += m_snl.GetOutput(2) ? 1 : 0;
+                soundTicks++;
+            }
         }
 
         if (frameticks % 10000 == 5000)
@@ -507,7 +535,12 @@ bool CMotherboard::SystemFrame()
         if (2 * soundBrasErr >= 20000)
         {
             soundBrasErr -= 20000;
-            DoSound();
+            //DebugLogFormat(_T("SoundSNL %02d  %2d %2d %2d  %2d %2d %2d\r\n"), soundTicks, snd0, snd1, snd2, snl0, snl1, snl2);
+            uint16_t s0 = (uint16_t)((soundTicks - snl0) * 512 / soundTicks);
+            uint16_t s1 = (uint16_t)((soundTicks - snl1) * 512 / soundTicks);
+            uint16_t s2 = (uint16_t)((soundTicks - snl2) * 512 / soundTicks);
+            DoSound(s0, s1, s2);
+            soundTicks = 0; snl0 = snl1 = snl2 = 0; snd0 = snd1 = snd2 = 0;
         }
 
         //if (m_ParallelOutCallback != nullptr)
@@ -559,6 +592,8 @@ uint16_t CMotherboard::GetWordView(uint16_t address, bool okHaltMode, bool okExe
     switch (addrtype)
     {
     case ADDRTYPE_RAM:
+    case ADDRTYPE_RAM2:
+    case ADDRTYPE_RAM4:
         return GetRAMWord(offset & ~1);
     case ADDRTYPE_ROM:
         return GetROMWord(offset & 0xfffe);
@@ -591,6 +626,8 @@ uint16_t CMotherboard::GetWord(uint16_t address, bool okHaltMode, bool okExec)
     switch (addrtype)
     {
     case ADDRTYPE_RAM:
+    case ADDRTYPE_RAM2:
+    case ADDRTYPE_RAM4:
         return GetRAMWord(offset & ~1);
     case ADDRTYPE_ROM:
         return GetROMWord(offset & 0xfffe);
@@ -626,6 +663,8 @@ uint8_t CMotherboard::GetByte(uint16_t address, bool okHaltMode)
     switch (addrtype)
     {
     case ADDRTYPE_RAM:
+    case ADDRTYPE_RAM2:
+    case ADDRTYPE_RAM4:
         return GetRAMByte(offset);
     case ADDRTYPE_ROM:
         return GetROMByte(offset & 0xffff);
@@ -652,7 +691,7 @@ uint8_t CMotherboard::GetByte(uint16_t address, bool okHaltMode)
     return 0;
 }
 
-void CMotherboard::SetWord(uint16_t address, bool okHaltMode, uint16_t word)
+void CMotherboard::SetWord(uint16_t address, bool okHaltMode, uint16_t word, bool isRMW)
 {
     address &= ~1;
 
@@ -664,6 +703,12 @@ void CMotherboard::SetWord(uint16_t address, bool okHaltMode, uint16_t word)
     case ADDRTYPE_RAM:
         SetRAMWord(offset, word);
         return;
+    case ADDRTYPE_RAM2:
+        SetRAMWord2(offset, word);
+        return;
+    case ADDRTYPE_RAM4:
+        SetRAMWord4(offset, word);
+        return;
     case ADDRTYPE_ROM:  // Writing to ROM
         //DebugLogFormat(_T("%c%06ho\tSETWORD ROM (%06ho)\n"), HU_INSTRUCTION_PC, address);
         //m_pCPU->MemoryError();
@@ -674,10 +719,13 @@ void CMotherboard::SetWord(uint16_t address, bool okHaltMode, uint16_t word)
     case ADDRTYPE_EMUL:
         DebugLogFormat(_T("%c%06ho\tSETWORD %06ho -> (%06ho) EMUL\n"), HU_INSTRUCTION_PC, word, address);
         SetRAMWord(offset & 07777, word);
-        if ((m_PPIBrd & 1) == 1)  // EF0 inactive?
-            m_HR[0] = address;
-        else
-            m_HR[1] = address;
+        if (!isRMW)
+        {
+            if ((m_PPIBrd & 1) == 1)  // EF0 inactive?
+                m_HR[0] = address;
+            else
+                m_HR[1] = address;
+        }
         m_PPIBrd &= ~3;  // set EF1,EF0 active
         m_pCPU->SetHALTPin(true);
         return;
@@ -690,7 +738,7 @@ void CMotherboard::SetWord(uint16_t address, bool okHaltMode, uint16_t word)
     ASSERT(false);  // If we are here - then addrtype has invalid value
 }
 
-void CMotherboard::SetByte(uint16_t address, bool okHaltMode, uint8_t byte)
+void CMotherboard::SetByte(uint16_t address, bool okHaltMode, uint8_t byte, bool isRMW)
 {
     uint32_t offset;
     int addrtype = TranslateAddress(address, okHaltMode, false, &offset);
@@ -699,6 +747,12 @@ void CMotherboard::SetByte(uint16_t address, bool okHaltMode, uint8_t byte)
     {
     case ADDRTYPE_RAM:
         SetRAMByte(offset, byte);
+        return;
+    case ADDRTYPE_RAM2:
+        SetRAMByte2(offset, byte);
+        return;
+    case ADDRTYPE_RAM4:
+        SetRAMByte4(offset, byte);
         return;
     case ADDRTYPE_ROM:  // Writing to ROM
         //DebugLogFormat(_T("%c%06ho\tSETBYTE ROM (%06ho)\n"), HU_INSTRUCTION_PC, address);
@@ -710,10 +764,13 @@ void CMotherboard::SetByte(uint16_t address, bool okHaltMode, uint8_t byte)
     case ADDRTYPE_EMUL:
         DebugLogFormat(_T("%c%06ho\tSETBYTE %03o -> (%06ho) EMUL\n"), HU_INSTRUCTION_PC, byte, address);
         SetRAMByte(offset & 07777, byte);
-        if ((m_PPIBrd & 1) == 1)  // EF0 inactive?
-            m_HR[0] = address;
-        else
-            m_HR[1] = address;
+        if (!isRMW)
+        {
+            if ((m_PPIBrd & 1) == 1)  // EF0 inactive?
+                m_HR[0] = address;
+            else
+                m_HR[1] = address;
+        }
         m_PPIBrd &= ~3;  // set EF1,EF0 active
         m_pCPU->SetHALTPin(true);
         return;
@@ -775,8 +832,10 @@ int CMotherboard::TranslateAddress(uint16_t address, bool okHaltMode, bool /*okE
     }
 
     *pOffset = longaddr;
-    //ASSERT(longaddr < m_nRamSizeBytes);
-    return ADDRTYPE_RAM;
+    uint16_t maskmode = memreg & 3;
+    if (maskmode == 0)
+        return ADDRTYPE_RAM;
+    return (maskmode & 2) == 0 ? ADDRTYPE_RAM2 : ADDRTYPE_RAM4;
 }
 
 uint8_t CMotherboard::GetPortByte(uint16_t address)
@@ -914,8 +973,6 @@ uint16_t CMotherboard::GetPortWord(uint16_t address)
     case 0161216:
         chunk = (address >> 1) & 7;
         DebugLogFormat(_T("%c%06ho\tGETPORT %06ho HR%d -> %06ho\n"), HU_INSTRUCTION_PC, address, chunk, m_HR[chunk]);
-        if (m_pCPU->IsHaltMode() && (chunk == 0 || chunk == 1))  // Чтение HR0 или HR1 в режиме HALT
-            m_PPIBrd |= 3;  // Снимаем EF0 и EF1
         return m_HR[chunk];
 
     case 0161220:
@@ -1389,22 +1446,23 @@ void CMotherboard::ProcessRtcWrite(uint16_t address, uint8_t byte)
 //   20480               - RAM image 512/1024/2048/4096 KB
 //
 //  Board status (400 bytes):
-//      32      4 bytes  - RAM size bytes
-//      36      6 bytes  - PIC
-//      42      4 bytes  - RESERVED
-//      46     10 bytes  - PPI
-//      56      8 bytes  - RESERVED
-//      64     32 bytes  - HR[8]
-//      96     32 bytes  - UR[8]
-//     128      8 bytes  - RESERVED
-//     136      8 bytes  - HDD controller
-//     152      8 bytes  - RESERVED
+//      32      2 bytes  - configuration
+//      34      4 bytes  - RAM size bytes
+//      38      6 bytes  - PIC
+//      44      4 bytes  - RESERVED
+//      48     10 bytes  - PPI
+//      58      8 bytes  - RESERVED
+//      66     32 bytes  - HR[8]
+//      98     32 bytes  - UR[8]
+//     130      8 bytes  - RESERVED
+//     138     16 bytes  - HDD controller
+//     154      6 bytes  - RESERVED
 //     160     12 bytes  - Keyboard
 //     172      4 bytes  - RESERVED
 //     176      6 bytes  - Mouse
 //     182     10 bytes  - RESERVED
 //     192     60 bytes  - PIT8253 x 2
-//     256      4 bytes  - RESERVED
+//     252      4 bytes  - RESERVED
 //     256     64 bytes  - Timer
 //     320     80 bytes  - RESERVED
 //
@@ -1437,10 +1495,9 @@ void CMotherboard::SaveToImage(uint8_t* pImage)
     *pwImage++ = m_hdint;
     *pwImage++ = m_nHDbuff;
     *pwImage++ = m_nHDbuffpos;
-    *pwImage++ = m_HDbuffdir;
-    pwImage += 8 / 2;  // RESERVED
+    *pwImage   = m_HDbuffdir;
     // Keyboard, mouse
-    pwImage = reinterpret_cast<uint16_t*>(pImage + 216);
+    pwImage = reinterpret_cast<uint16_t*>(pImage + 160);
     memcpy(pwImage, m_keymatrix, sizeof(m_keymatrix));  // 8 bytes
     pwImage += 8 / 2;
     *pwImage++ = m_keypos;
@@ -1451,9 +1508,9 @@ void CMotherboard::SaveToImage(uint8_t* pImage)
     *pwImage++ = m_mousest;
     pwImage += 10 / 2;  // RESERVED
     // PIT8253 x 2
-    memcpy(pwImage, m_snd.m_chan, sizeof(m_snd.m_chan));  // 30 bytes
-    pwImage += 30 / 2;
     memcpy(pwImage, m_snl.m_chan, sizeof(m_snl.m_chan));  // 30 bytes
+    pwImage += 30 / 2;
+    memcpy(pwImage, m_snd.m_chan, sizeof(m_snd.m_chan));  // 30 bytes
     // Timer
     time_t tnow = time(0);
     struct tm* lnow = localtime(&tnow);
@@ -1526,10 +1583,9 @@ void CMotherboard::LoadFromImage(const uint8_t* pImage)
     m_hdint = *pwImage++ != 0;
     m_nHDbuff = (uint8_t) * pwImage++;
     m_nHDbuffpos = *pwImage++;
-    m_HDbuffdir = *pwImage++ != 0;
-    pwImage += 8 / 2;  // RESERVED
+    m_HDbuffdir = *pwImage != 0;
     // Keyboard, mouse
-    pwImage = reinterpret_cast<const uint16_t*>(pImage + 216);
+    pwImage = reinterpret_cast<const uint16_t*>(pImage + 160);
     memcpy(m_keymatrix, pwImage, sizeof(m_keymatrix));  // 8 bytes
     pwImage += 8 / 2;
     m_keypos = *pwImage++;
@@ -1540,9 +1596,9 @@ void CMotherboard::LoadFromImage(const uint8_t* pImage)
     m_mousest = (uint8_t) * pwImage++;
     pwImage += 10 / 2;  // RESERVED
     // PIT8253 x 2
-    memcpy(m_snd.m_chan, pwImage, sizeof(m_snd.m_chan));  // 30 bytes
-    pwImage += 30 / 2;
     memcpy(m_snl.m_chan, pwImage, sizeof(m_snl.m_chan));  // 30 bytes
+    pwImage += 30 / 2;
+    memcpy(m_snd.m_chan, pwImage, sizeof(m_snd.m_chan));  // 30 bytes
     // Timer
     const uint8_t* pImageTimer = pImage + 256;
     pImageTimer++;  // Seconds
@@ -1575,25 +1631,12 @@ void CMotherboard::LoadFromImage(const uint8_t* pImage)
 
 //////////////////////////////////////////////////////////////////////
 
-void CMotherboard::DoSound()
+void CMotherboard::DoSound(uint16_t s0, uint16_t s1, uint16_t s2)
 {
     if (m_SoundGenCallback == nullptr)
         return;
 
-    uint16_t sound =
-        (m_snl.GetOutput(0) ? 0 : 1) +
-        (m_snl.GetOutput(1) ? 0 : 1) +
-        (m_snl.GetOutput(2) ? 0 : 1);
-
-    switch (sound)
-    {
-    case 3:
-        sound = 0x7fff;  break;
-    case 2:
-        sound = 0x5555;  break;
-    case 1:
-        sound = 0x2AAA;  break;
-    }
+    uint16_t sound = (s0 + s1 + s2) * 21;
 
     (*m_SoundGenCallback)(sound, sound);
 }
