@@ -16,43 +16,89 @@ NEONBTL. If not, see <http://www.gnu.org/licenses/>. */
 
 // Timings ///////////////////////////////////////////////////////////
 
-uint16_t MOV_TIMING[8][8] =
+uint16_t MOV_TIMING[12][12] =
 {
-    // RN     (RN)    (RN)+  @(RN)+  -(RN)   @-(RN)  X(RN)   @X(RN)
-    {0x0007, 0x0016, 0x0017, 0x001F, 0x0017, 0x001F, 0x001E, 0x002E},   // RN
-    {0x000F, 0x0020, 0x0020, 0x002E, 0x0026, 0x002F, 0x0028, 0x0037},   // (RN)
-    {0x000F, 0x0020, 0x0021, 0x002E, 0x0026, 0x002F, 0x0028, 0x0037},   // (RN)+
-    {0x0018, 0x0028, 0x0028, 0x0035, 0x002F, 0x0036, 0x0038, 0x003E},   // @(RN)+
-    {0x0010, 0x0024, 0x0024, 0x0034, 0x0026, 0x002F, 0x002A, 0x0036},   // -(RN)
-    {0x0017, 0x002C, 0x002E, 0x0040, 0x002F, 0x0037, 0x0034, 0x003E},   // @-(RN)
-    {0x001E, 0x002E, 0x0030, 0x0038, 0x002F, 0x0038, 0x0037, 0x0045},   // X(RN)
-    {0x0027, 0x0037, 0x0035, 0x0040, 0x0036, 0x0040, 0x003E, 0x004D}    // @X(RN)
+    // R1   @R1  (R1)+ @(R1)+ -(R1) @-(R1) X(R1) @X(R1)  #X    @#X    X    @X
+    {   8,   24,   24,   32,   24,   32,   32,   48,     32,   32,   32,   48 },  // R0
+    {  16,   32,   32,   48,   40,   48,   40,   56,     40,   40,   40,   56 },  // @R0
+    {  16,   32,   32,   48,   40,   48,   40,   56,     40,   40,   40,   56 },  // (R0)+
+    {  24,   40,   40,   56,   48,   56,   48,   64,     48,   48,   48,   64 },  // @(R0)+
+    {  16,   32,   32,   48,   40,   48,   40,   56,     40,   40,   40,   56 },  // -(R0)
+    {  24,   40,   40,   56,   48,   56,   48,   64,     48,   48,   48,   64 },  // @-(R0)
+    {  32,   48,   48,   56,   48,   56,   56,   72,     56,   56,   56,   72 },  // X(R0)
+    {  40,   56,   56,   64,   56,   64,   64,   80,     64,   64,   64,   80 },  // @X(R0)
+    {  16,   32,   32,   40,   32,   40,   40,   56,     40,   40,   40,   56 },  // #X
+    {  32,   48,   48,   56,   48,   56,   56,   72,     56,   56,   56,   72 },  // @#X
+    {  32,   48,   48,   56,   48,   56,   56,   72,     56,   56,   56,   72 },  // X
+    {  40,   56,   56,   64,   56,   64,   64,   80,     64,   64,   64,   80 },  // @X
 };
 
-uint16_t MOVB_TIMING[8][8] =
+uint16_t MOVB_TIMING[12][12] =  // MOVB, BICB, BISB
 {
-    // RN     (RN)    (RN)+  @(RN)+  -(RN)   @-(RN)  X(RN)   @X(RN)
-    {0x0007, 0x0016, 0x0016, 0x001E, 0x0016, 0x001F, 0x0027, 0x002D},   // RN
-    {0x000E, 0x0026, 0x0028, 0x002E, 0x002C, 0x0031, 0x002E, 0x0037},   // (RN)
-    {0x000F, 0x0028, 0x002D, 0x002E, 0x0027, 0x0031, 0x0036, 0x0037},   // (RN)+
-    {0x0016, 0x0030, 0x0030, 0x0036, 0x0033, 0x0036, 0x0039, 0x003E},   // @(RN)+
-    {0x000F, 0x002C, 0x0027, 0x0038, 0x0030, 0x0038, 0x003A, 0x0037},   // -(RN)
-    {0x0017, 0x0030, 0x0030, 0x0037, 0x0030, 0x0038, 0x0039, 0x003E},   // @-(RN)
-    {0x001F, 0x002F, 0x002E, 0x0038, 0x0030, 0x0038, 0x003F, 0x0046},   // X(RN)
-    {0x0029, 0x0037, 0x003A, 0x003E, 0x0038, 0x003D, 0x0046, 0x004E}    // @X(RN)
+    // R1   @R1  (R1)+ @(R1)+ -(R1) @-(R1) X(R1) @X(R1)  #X    @#X    X    @X
+    {   8,   24,   24,   32,   24,   32,   40,   48,     40,   40,   40,   48 },  // R0
+    {  16,   40,   40,   48,   40,   48,   48,   56,     48,   48,   48,   56 },  // @R0
+    {  16,   40,   40,   48,   40,   48,   48,   56,     48,   48,   48,   56 },  // (R0)+
+    {  24,   48,   48,   56,   48,   56,   56,   64,     56,   56,   56,   64 },  // @(R0)+
+    {  16,   40,   40,   48,   40,   48,   48,   56,     48,   48,   48,   56 },  // -(R0)
+    {  24,   48,   48,   56,   48,   56,   56,   64,     56,   56,   56,   64 },  // @-(R0)
+    {  32,   48,   48,   56,   48,   56,   64,   72,     56,   64,   64,   72 },  // X(R0)
+    {  40,   56,   56,   64,   56,   64,   72,   80,     64,   72,   72,   80 },  // @X(R0)
+    {  24,   40,   40,   48,   40,   48,   56,   64,     48,   56,   56,   64 },  // #X
+    {  32,   48,   48,   56,   48,   56,   64,   72,     56,   64,   64,   72 },  // @#X
+    {  32,   48,   48,   56,   48,   56,   64,   72,     56,   64,   64,   72 },  // X
+    {  40,   56,   56,   64,   56,   64,   72,   80,     64,   72,   72,   80 },  // @X
 };
 
-uint16_t CMP_TIMING[8][8] =
+uint16_t ADD_TIMING[12][12] =  // ADD, BIC, BIS, SUB
 {
-    // RN     (RN)    (RN)+  @(RN)+  -(RN)   @-(RN)  X(RN)   @X(RN)
-    {0x0007, 0x0010, 0x0010, 0x0018, 0x0018, 0x0020, 0x0026, 0x0030},   // RN
-    {0x000F, 0x0020, 0x0020, 0x0029, 0x0026, 0x0028, 0x0030, 0x0037},   // (RN)
-    {0x000F, 0x0020, 0x0020, 0x0029, 0x002E, 0x0028, 0x0030, 0x0037},   // (RN)+
-    {0x0017, 0x0029, 0x0029, 0x002D, 0x002C, 0x0030, 0x0034, 0x003E},   // @(RN)+
-    {0x000F, 0x0022, 0x0020, 0x0028, 0x002E, 0x002A, 0x002F, 0x0037},   // -(RN)
-    {0x0017, 0x0028, 0x002E, 0x002F, 0x002B, 0x0030, 0x003A, 0x003F},   // @-(RN)
-    {0x001E, 0x002A, 0x002A, 0x002F, 0x0029, 0x0030, 0x003F, 0x0045},   // X(RN)
-    {0x0027, 0x002E, 0x002E, 0x0037, 0x002F, 0x0037, 0x0046, 0x004E}    // @X(RN)
+    // R1   @R1  (R1)+ @(R1)+ -(R1) @-(R1) X(R1) @X(R1)  #X    @#X    X    @X
+    {   8,   24,   24,   32,   24,   32,   40,   48,     40,   40,   40,   48 },  // R0
+    {  16,   40,   40,   48,   40,   48,   48,   56,     48,   48,   48,   56 },  // @R0
+    {  16,   40,   40,   48,   40,   48,   48,   56,     48,   48,   48,   56 },  // (R0)+
+    {  24,   48,   48,   56,   48,   56,   56,   64,     56,   56,   56,   64 },  // @(R0)+
+    {  16,   40,   40,   48,   40,   48,   48,   56,     48,   48,   48,   56 },  // -(R0)
+    {  24,   48,   48,   56,   48,   56,   56,   64,     56,   56,   56,   64 },  // @-(R0)
+    {  32,   48,   48,   56,   48,   56,   64,   72,     56,   64,   64,   72 },  // X(R0)
+    {  40,   56,   56,   64,   56,   64,   72,   80,     64,   72,   72,   80 },  // @X(R0)
+    {  16,   32,   32,   40,   32,   40,   48,   56,     40,   48,   48,   56 },  // #X
+    {  32,   48,   48,   56,   48,   56,   64,   72,     56,   64,   64,   72 },  // @#X
+    {  32,   48,   48,   56,   48,   56,   64,   72,     56,   64,   64,   72 },  // X
+    {  40,   56,   56,   64,   56,   64,   72,   80,     64,   72,   72,   80 },  // @X
+};
+
+uint16_t BIT_TIMING[12][12] =  // BIT, CMP
+{
+    // R1   @R1  (R1)+ @(R1)+ -(R1) @-(R1) X(R1) @X(R1)  #X    @#X    X    @X
+    {   8,   16,   16,   24,   24,   32,   40,   48,     24,   40,   40,   48 },  // R0
+    {  16,   32,   32,   40,   32,   40,   48,   56,     40,   48,   48,   56 },  // @R0
+    {  16,   32,   32,   40,   32,   40,   48,   56,     40,   48,   48,   56 },  // (R0)+
+    {  24,   40,   40,   48,   40,   48,   56,   64,     48,   56,   56,   64 },  // @(R0)+
+    {  16,   32,   32,   40,   32,   40,   48,   56,     40,   48,   48,   56 },  // -(R0)
+    {  24,   40,   40,   48,   40,   48,   56,   64,     48,   56,   56,   64 },  // @-(R0)
+    {  32,   40,   40,   48,   40,   48,   64,   72,     48,   64,   64,   72 },  // X(R0)
+    {  40,   48,   48,   56,   48,   56,   72,   80,     56,   72,   72,   80 },  // @X(R0)
+    {  16,   24,   24,   32,   24,   32,   48,   56,     32,   48,   48,   56 },  // #X
+    {  32,   40,   40,   48,   40,   48,   64,   72,     48,   64,   64,   72 },  // @#X
+    {  32,   40,   40,   48,   40,   48,   64,   72,     48,   64,   64,   72 },  // X
+    {  40,   48,   48,   56,   48,   56,   72,   80,     56,   72,   72,   80 },  // @X
+};
+
+uint16_t BITB_TIMING[12][12] =  // BITB, CMPB
+{
+    // R1   @R1  (R1)+ @(R1)+ -(R1) @-(R1) X(R1) @X(R1)  #X    @#X    X    @X
+    {   8,   16,   16,   24,   24,   32,   40,   48,     40,   40,   40,   48 },  // R0
+    {  16,   32,   32,   40,   32,   40,   48,   56,     48,   48,   48,   56 },  // @R0
+    {  16,   32,   32,   40,   32,   40,   48,   56,     48,   48,   48,   56 },  // (R0)+
+    {  24,   40,   40,   48,   40,   48,   56,   64,     56,   56,   56,   64 },  // @(R0)+
+    {  16,   32,   32,   40,   32,   40,   48,   56,     48,   48,   48,   56 },  // -(R0)
+    {  24,   40,   40,   48,   40,   48,   56,   64,     56,   56,   56,   64 },  // @-(R0)
+    {  32,   40,   40,   48,   40,   48,   64,   72,     56,   64,   64,   72 },  // X(R0)
+    {  40,   48,   48,   56,   48,   56,   72,   80,     64,   72,   72,   80 },  // @X(R0)
+    {  24,   32,   32,   40,   32,   40,   56,   64,     48,   56,   56,   64 },  // #X
+    {  32,   40,   40,   48,   40,   48,   64,   72,     56,   64,   64,   72 },  // @#X
+    {  32,   40,   40,   48,   40,   48,   64,   72,     56,   64,   64,   72 },  // X
+    {  40,   48,   48,   56,   48,   56,   72,   80,     64,   72,   72,   80 },  // @X
 };
 
 uint16_t CLR_TIMING[8] =
@@ -123,6 +169,28 @@ uint16_t SOB_LAST_TIMING = 0x000E;  // last iteration of SOB
 uint16_t BR_TIMING = 0x001C;
 uint16_t MARK_TIMING = 0x0030;
 uint16_t RESET_TIMING = 1000;
+
+static uint16_t GetInstructionTiming12x12(const uint16_t timings[12][12], uint16_t instruction)
+{
+    uint8_t methsrc, methdst;
+    switch (instruction & 007700)
+    {
+    case 002700: methsrc = 8; break;
+    case 003700: methsrc = 9; break;
+    case 006700: methsrc = 10; break;
+    case 007700: methsrc = 11; break;
+    default: methsrc = GetDigit(instruction, 3); break;
+    }
+    switch (instruction & 000077)
+    {
+    case 000027: methdst = 8; break;
+    case 000037: methdst = 9; break;
+    case 000067: methdst = 10; break;
+    case 000077: methdst = 11; break;
+    default: methdst = GetDigit(instruction, 1); break;
+    }
+    return timings[methsrc][methdst];
+}
 
 
 //////////////////////////////////////////////////////////////////////
@@ -430,7 +498,7 @@ bool CProcessor::InterruptProcessing()
             uint16_t new_psw = GetWord(intrVector + 2);
             if (m_RPLYrq) return true;
 
-            DebugLogFormat(_T("%06ho\tCPU HALT INT vector=%06ho PC=%06ho PSW=%06ho\r\n"), GetInstructionPC(), intrVector, new_pc, new_psw);
+            //DebugLogFormat(_T("%c%06ho\tCPU HALT INT vector=%06ho PC=%06ho PSW=%06ho\r\n"), currMode ? _T('H') : _T('U'), GetInstructionPC(), intrVector, new_pc, new_psw);
             SetPSW(new_psw);
             SetPC(new_pc);
         }
@@ -451,7 +519,7 @@ bool CProcessor::InterruptProcessing()
             uint16_t new_psw = GetWord(intrVector + 2);
             if (m_RPLYrq) return true;
 
-            DebugLogFormat(_T("%06ho\tCPU USER INT vector=%06ho PC=%06ho PSW=%06ho\r\n"), GetInstructionPC(), intrVector, new_pc, new_psw);
+            //DebugLogFormat(_T("%c%06ho\tCPU USER INT vector=%06ho PC=%06ho PSW=%06ho\r\n"), currMode ? _T('H') : _T('U'), GetInstructionPC(), intrVector, new_pc, new_psw);
             SetLPSW((uint8_t)(new_psw & 0xff));
             SetPC(new_pc);
         }
@@ -676,7 +744,7 @@ void CProcessor::ExecuteMFUS ()  // ЧЧП, move from user space - Чтение 
     SetReg(5, addr + 2);
     if (!m_RPLYrq) SetReg(0, word);
 
-    m_internalTick = MOV_TIMING[0][2];
+    m_internalTick = MOV_TIMING[0][2] - 1;
 }
 
 void CProcessor::ExecuteMTUS()  // ЗЧП, move to user space - Запись в память адресного пространства USER
@@ -693,7 +761,7 @@ void CProcessor::ExecuteMTUS()  // ЗЧП, move to user space - Запись в 
     SetWord(GetReg(5), GetReg(0));  // Write in USER mode
     SetHALT(true);
 
-    m_internalTick = MOV_TIMING[0][2];
+    m_internalTick = MOV_TIMING[0][2] - 1;
 }
 
 void CProcessor::ExecuteRTI()  // RTI - Return from Interrupt - Возврат из прерывания
@@ -820,7 +888,7 @@ void CProcessor::ExecuteSWAB ()
     if ((dst & 0200) != 0) new_psw |= PSW_N;
     if ((uint8_t)(dst & 0xff) == 0) new_psw |= PSW_Z;
     SetLPSW(new_psw);
-    m_internalTick = MOV_TIMING[m_methdest][m_methdest];
+    m_internalTick = MOV_TIMING[m_methdest][m_methdest] - 1;
 }
 
 void CProcessor::ExecuteCLR ()  // CLR
@@ -871,7 +939,7 @@ void CProcessor::ExecuteCOM()  // COM
     {
         ea = GetWordAddr(m_methdest, m_regdest);
         if (m_RPLYrq) return;
-        dst = GetWord(ea);
+        dst = GetWord(ea);  // RMW read
         if (m_RPLYrq) return;
     }
     else
@@ -880,7 +948,7 @@ void CProcessor::ExecuteCOM()  // COM
     dst = ~dst;
 
     if (m_methdest)
-        SetWord(ea, dst);
+        SetWordRMW(ea, dst);  // RMW write
     else
         SetReg(m_regdest, dst);
     if (m_RPLYrq) return;
@@ -901,7 +969,7 @@ void CProcessor::ExecuteCOMB()  // COM
     {
         ea = GetByteAddr(m_methdest, m_regdest);
         if (m_RPLYrq) return;
-        dst = GetByte(ea);
+        dst = GetByte(ea);  // RMW read
         if (m_RPLYrq) return;
     }
     else
@@ -910,7 +978,7 @@ void CProcessor::ExecuteCOMB()  // COM
     dst = ~dst;
 
     if (m_methdest)
-        SetByte(ea, dst);
+        SetByteRMW(ea, dst);  // RMW write
     else
         SetLReg(m_regdest, dst);
     if (m_RPLYrq) return;
@@ -1764,7 +1832,7 @@ void CProcessor::ExecuteXOR ()  // XOR
     {
         ea = GetWordAddr(m_methdest, m_regdest);
         if (m_RPLYrq) return;
-        dst = GetWord(ea);
+        dst = GetWord(ea);  // RMW read
         if (m_RPLYrq) return;
     }
     else
@@ -1773,7 +1841,7 @@ void CProcessor::ExecuteXOR ()  // XOR
     dst = dst ^ GetReg(m_regsrc);
 
     if (m_methdest)
-        SetWord(ea, dst);
+        SetWordRMW(ea, dst);  // RMW write
     else
         SetReg(m_regdest, dst);
     if (m_RPLYrq) return;
@@ -1988,7 +2056,8 @@ void CProcessor::ExecuteMOV()  // MOV - move
     if (dst & 0100000) new_psw |= PSW_N;
     if (dst == 0) new_psw |= PSW_Z;
     SetLPSW(new_psw);
-    m_internalTick = MOV_TIMING[m_methsrc][m_methdest];
+
+    m_internalTick = GetInstructionTiming12x12(MOV_TIMING, m_instruction) - 1;
 }
 
 void CProcessor::ExecuteMOVB()  // MOVB - move byte
@@ -2022,7 +2091,8 @@ void CProcessor::ExecuteMOVB()  // MOVB - move byte
     if (dst & 0200) new_psw |= PSW_N;
     if (dst == 0) new_psw |= PSW_Z;
     SetLPSW(new_psw);
-    m_internalTick = MOVB_TIMING[m_methsrc][m_methdest];
+
+    m_internalTick = GetInstructionTiming12x12(MOVB_TIMING, m_instruction) - 1;
 }
 
 void CProcessor::ExecuteCMP()  // CMP - compare
@@ -2061,7 +2131,8 @@ void CProcessor::ExecuteCMP()  // CMP - compare
     if (((src ^ src2) & ~(dst ^ src2)) & 0100000) new_psw |= PSW_V;
     if (((~src & src2) | (~(src ^ src2) & dst)) & 0100000) new_psw |= PSW_C;
     SetLPSW(new_psw);
-    m_internalTick = CMP_TIMING[m_methsrc][m_methdest];
+
+    m_internalTick = GetInstructionTiming12x12(BIT_TIMING, m_instruction) - 1;
 }
 
 void CProcessor::ExecuteCMPB()  // CMPB - compare byte
@@ -2100,7 +2171,8 @@ void CProcessor::ExecuteCMPB()  // CMPB - compare byte
     if (((src ^ src2) & ~(dst ^ src2)) & 0200) new_psw |= PSW_V;
     if (((~src & src2) | (~(src ^ src2) & dst)) & 0200) new_psw |= PSW_C;
     SetLPSW(new_psw);
-    m_internalTick = CMP_TIMING[m_methsrc][m_methdest];
+
+    m_internalTick = GetInstructionTiming12x12(BITB_TIMING, m_instruction) - 1;
 }
 
 void CProcessor::ExecuteBIT()  // BIT - bit test
@@ -2136,7 +2208,8 @@ void CProcessor::ExecuteBIT()  // BIT - bit test
     if (dst & 0100000) new_psw |= PSW_N;
     if (dst == 0) new_psw |= PSW_Z;
     SetLPSW(new_psw);
-    m_internalTick = CMP_TIMING[m_methsrc][m_methdest];
+
+    m_internalTick = GetInstructionTiming12x12(BIT_TIMING, m_instruction) - 1;
 }
 
 void CProcessor::ExecuteBITB()  // BITB - bit test on byte
@@ -2172,7 +2245,8 @@ void CProcessor::ExecuteBITB()  // BITB - bit test on byte
     if (dst & 0200) new_psw |= PSW_N;
     if (dst == 0) new_psw |= PSW_Z;
     SetLPSW(new_psw);
-    m_internalTick = CMP_TIMING[m_methsrc][m_methdest];
+
+    m_internalTick = GetInstructionTiming12x12(BITB_TIMING, m_instruction) - 1;
 }
 
 void CProcessor::ExecuteBIC()  // BIC - bit clear
@@ -2214,7 +2288,8 @@ void CProcessor::ExecuteBIC()  // BIC - bit clear
     if (dst & 0100000) new_psw |= PSW_N;
     if (dst == 0) new_psw |= PSW_Z;
     SetLPSW(new_psw);
-    m_internalTick = MOV_TIMING[m_methsrc][m_methdest];
+
+    m_internalTick = GetInstructionTiming12x12(ADD_TIMING, m_instruction) - 1;
 }
 
 void CProcessor::ExecuteBICB()  // BICB - bit clear
@@ -2256,7 +2331,8 @@ void CProcessor::ExecuteBICB()  // BICB - bit clear
     if (dst & 0200) new_psw |= PSW_N;
     if (dst == 0) new_psw |= PSW_Z;
     SetLPSW(new_psw);
-    m_internalTick = MOVB_TIMING[m_methsrc][m_methdest];
+
+    m_internalTick = GetInstructionTiming12x12(MOVB_TIMING, m_instruction) - 1;
 }
 
 void CProcessor::ExecuteBIS()  // BIS - bit set
@@ -2298,7 +2374,8 @@ void CProcessor::ExecuteBIS()  // BIS - bit set
     if (dst & 0100000) new_psw |= PSW_N;
     if (dst == 0) new_psw |= PSW_Z;
     SetLPSW(new_psw);
-    m_internalTick = MOV_TIMING[m_methsrc][m_methdest];
+
+    m_internalTick = GetInstructionTiming12x12(ADD_TIMING, m_instruction) - 1;
 }
 
 void CProcessor::ExecuteBISB()  // BISB - bit set on byte
@@ -2340,7 +2417,8 @@ void CProcessor::ExecuteBISB()  // BISB - bit set on byte
     if (dst & 0200) new_psw |= PSW_N;
     if (dst == 0) new_psw |= PSW_Z;
     SetLPSW(new_psw);
-    m_internalTick = MOVB_TIMING[m_methsrc][m_methdest];
+
+    m_internalTick = GetInstructionTiming12x12(MOVB_TIMING, m_instruction) - 1;
 }
 
 void CProcessor::ExecuteADD ()  // ADD
@@ -2382,7 +2460,8 @@ void CProcessor::ExecuteADD ()  // ADD
     if ((~(src ^ src2) & (dst ^ src2)) & 0100000) new_psw |= PSW_V;
     if (((src & src2) | ((src ^ src2) & ~dst)) & 0100000) new_psw |= PSW_C;
     SetLPSW(new_psw);
-    m_internalTick = MOVB_TIMING[m_methsrc][m_methdest];
+
+    m_internalTick = GetInstructionTiming12x12(ADD_TIMING, m_instruction) - 1;
 }
 
 void CProcessor::ExecuteSUB()  // SUB
@@ -2424,7 +2503,8 @@ void CProcessor::ExecuteSUB()  // SUB
     if (((src ^ src2) & ~(dst ^ src)) & 0100000) new_psw |= PSW_V;
     if (((src & ~src2) | (~(src ^ src2) & dst)) & 0100000) new_psw |= PSW_C;
     SetLPSW(new_psw);
-    m_internalTick = MOVB_TIMING[m_methsrc][m_methdest];
+
+    m_internalTick = GetInstructionTiming12x12(ADD_TIMING, m_instruction) - 1;
 }
 
 void CProcessor::ExecuteEMT()  // EMT - emulator trap
