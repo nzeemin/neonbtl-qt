@@ -212,7 +212,7 @@ void DrawBinaryValue(QPainter &painter, int x, int y, quint16 value)
     painter.drawText(x, y, buffer);
 }
 
-// Parse octal value from text
+// Parse 16-bit octal value from text
 bool ParseOctalValue(const char* text, quint16* pValue)
 {
     quint16 value = 0;
@@ -231,7 +231,7 @@ bool ParseOctalValue(const char* text, quint16* pValue)
     return true;
 }
 
-// Parse octal value from text
+// Parse 16-bit octal value from text
 bool ParseOctalValue(const QString &text, quint16* pValue)
 {
     quint16 value = 0;
@@ -244,6 +244,41 @@ bool ParseOctalValue(const QString &text, quint16* pValue)
         value = (value << 3);
         int digit = ch - '0';
         value += digit;
+    }
+    *pValue = value;
+    return true;
+}
+
+// Parse 16-bit hex value from text
+bool ParseHexValue(const char* text, quint16* pValue)
+{
+    quint16 value = 0;
+    char* pChar = (char*) text;
+    for (int p = 0; ; p++)
+    {
+        if (p > 4) return false;
+        char ch = *pChar;  pChar++;
+        if (ch == 0) break;
+        if (ch >= '0' && ch <= '9')
+        {
+            value = (value << 4);
+            int digit = ch - '0';
+            value += digit;
+        }
+        else if (ch >= 'a' && ch <= 'f')
+        {
+            value = (value << 4);
+            int digit = ch - 'a' + 10;
+            value += digit;
+        }
+        else if (ch >= 'A' && ch <= 'F')
+        {
+            value = (value << 4);
+            int digit = ch - 'A' + 10;
+            value += digit;
+        }
+        else
+            return false;
     }
     *pValue = value;
     return true;
