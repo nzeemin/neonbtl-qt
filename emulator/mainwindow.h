@@ -58,7 +58,6 @@ public slots:
     void emulatorFloppy1();
     void emulatorHardDrive();
     void debugConsoleView();
-    void debugDebugView();
     void debugDisasmView();
     void debugMemoryView();
     void debugStepInto();

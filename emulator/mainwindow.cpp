@@ -2,6 +2,7 @@
 #include <QAction>
 #include <QClipboard>
 #include <QDateTime>
+#include <QDesktopWidget>
 #include <QDockWidget>
 #include <QFileDialog>
 #include <QLabel>
@@ -43,7 +44,6 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->actionDrivesFloppy1, SIGNAL(triggered()), this, SLOT(emulatorFloppy1()));
     QObject::connect(ui->actionDrivesHard, SIGNAL(triggered()), this, SLOT(emulatorHardDrive()));
     QObject::connect(ui->actionDebugConsoleView, SIGNAL(triggered()), this, SLOT(debugConsoleView()));
-    QObject::connect(ui->actionDebugDebugView, SIGNAL(triggered()), this, SLOT(debugDebugView()));
     QObject::connect(ui->actionDebugDisasmView, SIGNAL(triggered()), this, SLOT(debugDisasmView()));
     QObject::connect(ui->actionDebugMemoryView, SIGNAL(triggered()), this, SLOT(debugMemoryView()));
     QObject::connect(ui->actionDebugStepInto, SIGNAL(triggered()), this, SLOT(debugStepInto()));
@@ -82,7 +82,7 @@ MainWindow::MainWindow(QWidget *parent) :
     int maxwid = m_screen->maximumWidth() > m_keyboard->maximumWidth() ? m_screen->maximumWidth() : m_keyboard->maximumWidth();
     ui->centralWidget->setMaximumWidth(maxwid);
 
-    m_dockDebug = new QDockWidget(tr("Processor"));
+    m_dockDebug = new QDockWidget(tr("Debug"));
     m_dockDebug->setObjectName("dockDebug");
     m_dockDebug->setWidget(m_debug);
     m_dockDebug->setFeatures(m_dockDebug->features() & ~QDockWidget::DockWidgetClosable);
@@ -181,12 +181,16 @@ void MainWindow::restoreSettings()
     int scrViewMode = Global_getSettings()->value("MainWindow/ScreenViewMode").toInt();
     m_screen->setMode(scrViewMode);
 
-    //Update centralWidget size
+    // Update centralWidget size
     ui->centralWidget->setMaximumHeight(m_screen->maximumHeight() + m_keyboard->maximumHeight());
-    ui->centralWidget->setMaximumWidth(m_screen->maximumWidth());
+    int maxwid = m_screen->maximumWidth() > m_keyboard->maximumWidth() ? m_screen->maximumWidth() : m_keyboard->maximumWidth();
+    ui->centralWidget->setMaximumWidth(maxwid);
 
-    //NOTE: Restore from maximized state fails, see https://bugreports.qt-project.org/browse/QTBUG-15080
-    restoreGeometry(Global_getSettings()->value("MainWindow/Geometry").toByteArray());
+    QByteArray geometry = Global_getSettings()->value("MainWindow/Geometry").toByteArray();
+    if (!geometry.isEmpty())
+        restoreGeometry(geometry);
+    if (isMaximized())  //HACK for restoring maximized window, see https://bugreports.qt.io/browse/QTBUG-46620
+        setGeometry(QApplication::desktop()->availableGeometry(this));
     restoreState(Global_getSettings()->value("MainWindow/WindowState").toByteArray());
 
     m_dockConsole->setVisible(Global_getSettings()->value("MainWindow/ConsoleView", false).toBool());
@@ -227,9 +231,11 @@ void MainWindow::updateMenu()
             g_pBoard->IsHardImageAttached() ? ":/images/iconHdd.svg" : ":/images/iconHddSlot.svg" ));
 
     ui->actionDebugConsoleView->setChecked(m_console->isVisible());
-    ui->actionDebugDebugView->setChecked(m_dockDebug->isVisible());
     ui->actionDebugDisasmView->setChecked(m_dockDisasm->isVisible());
     ui->actionDebugMemoryView->setChecked(m_dockMemory->isVisible());
+
+    if (m_debug != nullptr)
+        m_debug->updateToolbar();
 }
 
 void MainWindow::updateAllViews()
@@ -609,14 +615,11 @@ void MainWindow::debugConsoleView()
 
     if (!okShow)
     {
+        if (this->isMaximized())
+            this->showNormal();
         this->adjustSize();
     }
 
-    updateMenu();
-}
-void MainWindow::debugDebugView()
-{
-    m_dockDebug->setVisible(!m_dockDebug->isVisible());
     updateMenu();
 }
 void MainWindow::debugDisasmView()

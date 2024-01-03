@@ -357,6 +357,7 @@ void Emulator_UpdateKeyboardMatrix(const quint8 matrix[8])
     g_pBoard->UpdateKeyboardMatrix(matrix);
 }
 
+
 bool Emulator_SystemFrame()
 {
     g_pBoard->SetCPUBreakpoints(m_wEmulatorCPUBpsCount > 0 ? m_EmulatorCPUBps : nullptr);
@@ -521,11 +522,13 @@ void Emulator_PrepareScreenLines(void* pImageBits, SCREEN_LINE_CALLBACK lineCall
     uint16_t pal0 = GETPALETTEHILO(tapaddr);
     uint32_t colorBorder = Color16Convert(pal0);  // Глобальный цвет бордюра
 
-    for (int line = 0; line < NEON_SCREEN_HEIGHT; line++)  // Цикл по строкам 0..299
+    for (int line = -2; line < 300; line++)  // Цикл по строкам -2..299, первые две строки не видны
     {
         uint16_t linelo = pBoard->GetRAMWordView(tasaddr);
         uint16_t linehi = pBoard->GetRAMWordView(tasaddr + 2);
         tasaddr += 4;
+        if (line < 0)
+            continue;
 
         uint32_t* plinebits = linebits;
         uint32_t lineaddr = (((uint32_t)linelo) << 2) | (((uint32_t)(linehi & 0x000f)) << 18);
@@ -1125,9 +1128,10 @@ void CALLBACK PrepareScreenLine1248x900(uint32_t* pImageBits, const uint32_t* pL
 //   4 bytes        NEON_IMAGE_HEADER1
 //   4 bytes        NEON_IMAGE_HEADER2
 //   4 bytes        NEON_IMAGE_VERSION
-//   4 bytes        NEON_IMAGE_SIZE = 18K + 512/1024/2048/4096 KB
+//   4 bytes        state size = 20K + 512/1024/2048/4096 KB
 //   4 bytes        NEON uptime
-//   12 bytes       Not used
+//   4 bytes        state body compressed size
+//   8 bytes        RESERVED
 
 bool Emulator_SaveImage(const QString& sFilePath)
 {

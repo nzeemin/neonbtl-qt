@@ -18,6 +18,7 @@ public:
 
     void setCurrentProc(bool okProc);
     CProcessor* getCurrentProc() const;
+    void updateToolbar();
     void updateData();
     void updateWindowText();
 
@@ -29,6 +30,7 @@ protected:
 
 private:
     QToolBar* m_toolbar;
+    QAction* m_actionDebugger;
     QDebugCtrl* m_procCtrl;
     QDebugCtrl* m_stackCtrl;
     QDebugCtrl* m_portsCtrl;
