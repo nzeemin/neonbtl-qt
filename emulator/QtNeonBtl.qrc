@@ -16,5 +16,6 @@
         <file>images/iconScreenshot.svg</file>
         <file>images/iconDebugger.svg</file>
         <file>pk11.rom</file>
+        <file>images/iconHex.svg</file>
     </qresource>
 </RCC>
