@@ -490,7 +490,8 @@ uint32_t Color16Convert(uint16_t color)
     return
         ((color & 0x0300) >> 2 | (color & 0x0007) << 3 | (color & 0x0300) >> 7) |
         ((color & 0xe000) >> 8 | (color & 0x00e0) >> 3 | (color & 0xC000) >> 14) << 8 |
-        ((color & 0x1C00) >> 5 | (color & 0x0018) | (color & 0x1C00) >> 10) << 16;
+        ((color & 0x1C00) >> 5 | (color & 0x0018) | (color & 0x1C00) >> 10) << 16 |
+        0xFF000000;
 }
 
 #define FILL1PIXEL(color) { *plinebits++ = color; }

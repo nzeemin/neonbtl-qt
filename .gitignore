@@ -14,3 +14,6 @@ moc_*.cpp
 /emulator/QtNeonBtl
 /emulator/qrc_*
 /emulator/moc_*
+/emulator/QtNeonBtl.app
+*.dsk
+*.img

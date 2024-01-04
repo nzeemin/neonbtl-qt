@@ -46,7 +46,7 @@ QDebugView::QDebugView(QWidget *mainWindow) :
     m_portsCtrl = new QDebugPortsCtrl(this);
     m_portsCtrl->setGeometry(x, 0, cxPorts, cyHeight);
     x += cxPorts + 4;
-    int cxBreaks = cxChar * 9;
+    int cxBreaks = cxChar * 10 + cxChar / 2;
     m_breaksCtrl = new QDebugBreakpointsCtrl(this);
     m_breaksCtrl->setGeometry(x, 0, cxBreaks, cyHeight);
     x += cxBreaks + 4;
@@ -481,7 +481,7 @@ void QDebugBreakpointsCtrl::paintEvent(QPaintEvent * /*event*/)
     int cxChar = fontmetrics.averageCharWidth();
     int cyLine = fontmetrics.height();
 
-    int x = cxChar / 2, y = cyLine;
+    int x = cxChar, y = cyLine;
 
     painter.drawText(x, y, tr("Breakpts"));
 
@@ -536,7 +536,7 @@ void QDebugMemoryMapCtrl::paintEvent(QPaintEvent * /*event*/)
     int y1 = y + cxChar / 2;
     int x2 = x1 + cxChar * 13;
     int y2 = y1 + cyLine * 16;
-    int xtype = x1 + cxChar * 3;
+    int xtype = x1 + cxChar * 2;
     int ybase = y + cyLine * 16;
 
     painter.drawRect(x1, y1, x2 - x1, y2 - y1);
