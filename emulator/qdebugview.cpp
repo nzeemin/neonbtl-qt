@@ -186,6 +186,7 @@ QDebugProcessorCtrl::QDebugProcessorCtrl(QDebugView *debugView)
 {
     memset(m_wDebugCpuR, 0, sizeof(m_wDebugCpuR));
     memset(m_okDebugCpuRChanged, 0, sizeof(m_okDebugCpuRChanged));
+    m_wDebugCpuPswOld = 0;
 }
 
 void QDebugProcessorCtrl::paintEvent(QPaintEvent * /*event*/)
@@ -207,7 +208,10 @@ void QDebugProcessorCtrl::paintEvent(QPaintEvent * /*event*/)
     QColor colorText = palette().color(QPalette::Text);
     QColor colorChanged = Common_GetColorShifted(palette(), COLOR_VALUECHANGED);
 
-    int x = cxChar * 1, y = 0;
+    painter.setPen(colorText);
+    painter.drawText(cxChar, cyLine, "CPU");
+
+    int x = cxChar * 1, y = cyLine;
 
     // Registers
     for (int r = 0; r < 8; r++)
@@ -232,13 +236,14 @@ void QDebugProcessorCtrl::paintEvent(QPaintEvent * /*event*/)
     DrawBinaryValue(painter, x + cxChar * 15, y + 9 * cyLine, cpc);
 
     // PSW value
+    painter.drawText(x + cxChar * 15, y + 10 * cyLine, "       HP  TNZVC");
     painter.setPen(QColor(arrRChanged[8] ? colorChanged : colorText));
     painter.drawText(x, y + 11 * cyLine, "PS");
     quint16 psw = arrR[8]; // pProc->GetPSW();
     DrawOctalValue(painter, x + cxChar * 3, y + 11 * cyLine, psw);
     //DrawHexValue(painter, x + cxChar * 10, y + 11 * cyLine, psw);
-    painter.drawText(x + cxChar * 15, y + 10 * cyLine, "       HP  TNZVC");
-    DrawBinaryValue(painter, x + cxChar * 15, y + 11 * cyLine, psw);
+    //DrawBinaryValue(painter, x + cxChar * 15, y + 11 * cyLine, psw);
+    DrawBinaryValueChanged(painter, x + cxChar * 15, y + 11 * cyLine, psw, m_wDebugCpuPswOld, colorChanged, colorText);
 
     painter.setPen(colorText);
 
@@ -260,6 +265,8 @@ void QDebugProcessorCtrl::paintEvent(QPaintEvent * /*event*/)
 
 void QDebugProcessorCtrl::updateData()
 {
+    m_wDebugCpuPswOld = m_wDebugCpuR[8];
+
     const CProcessor* pCPU = g_pBoard->GetCPU();
     ASSERT(pCPU != nullptr);
 
@@ -271,8 +278,28 @@ void QDebugProcessorCtrl::updateData()
         m_wDebugCpuR[r] = value;
     }
     quint16 pswCPU = pCPU->GetPSW();
-    m_okDebugCpuRChanged[8] = (m_wDebugCpuR[8] != pswCPU);
+    m_okDebugCpuRChanged[8] = (m_wDebugCpuPswOld != pswCPU);
     m_wDebugCpuR[8] = pswCPU;
+}
+
+void QDebugProcessorCtrl::DrawBinaryValueChanged(
+    QPainter &painter, int x, int y, quint16 value, quint16 oldValue, QColor colorChanged, QColor colorText)
+{
+    char buffera[17], bufferb[17];
+    for (int b = 0; b < 16; b++)
+    {
+        int bit = (value >> b) & 1;
+        int oldbit = (oldValue >> b) & 1;
+        char ch = bit ? '1' : '0';
+        buffera[15 - b] = bit == oldbit ? ' ' : ch;
+        bufferb[15 - b] = bit == oldbit ? ch : ' ';
+    }
+    buffera[16] = 0;  bufferb[16] = 0;
+
+    painter.setPen(colorChanged);
+    painter.drawText(x, y, buffera);
+    painter.setPen(colorText);
+    painter.drawText(x, y, bufferb);
 }
 
 DebugCtrlHitTest QDebugProcessorCtrl::hitTest(int x, int y)
