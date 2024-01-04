@@ -109,7 +109,7 @@ const int NEON_SCREEN_HEIGHT = 300;
 #define COLOR_JUMPNO        qRgb(180, 180, 180)
 #define COLOR_JUMPHINT      qRgb( 40, 128, 160)
 #define COLOR_HINT          qRgb( 40,  40, 160)
-#define COLOR_BREAKPOINT    qRgb(255,  64,  64)
+#define COLOR_BREAKPOINT    qRgb(228,  64,  64)
 
 QFont Common_GetMonospacedFont();
 QColor Common_GetColorShifted(const QPalette& palette, QRgb rgb);

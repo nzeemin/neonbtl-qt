@@ -10,6 +10,7 @@
 
 
 const int MAX_DISASMLINECOUNT = 50;
+const int HINT_CHARPOS = 52;
 
 
 //////////////////////////////////////////////////////////////////////
@@ -29,6 +30,7 @@ QDisasmView::QDisasmView()
     this->setMinimumSize(cxChar * 55, cyLine * 10 + cyLine / 2);
 
     setFocusPolicy(Qt::ClickFocus);
+    setMouseTracking(true);
 }
 
 void QDisasmView::updateWindowText()
@@ -53,6 +55,16 @@ void QDisasmView::contextMenuEvent(QContextMenuEvent *event)
     QMenu menu(this);
     menu.addAction(m_SubtitleItems.isEmpty() ? tr("Load Subtitles...") : tr("Unload Subtitles"), this, SLOT(showHideSubtitles()));
     menu.exec(event->globalPos());
+}
+
+void QDisasmView::mouseMoveEvent(QMouseEvent * event)
+{
+    if (event->x() < m_cxDisasmBreakpointZone)
+        setCursor(QCursor(Qt::PointingHandCursor));
+    else
+        setCursor(QCursor(Qt::ArrowCursor));
+
+    QWidget::mouseMoveEvent(event);
 }
 
 void QDisasmView::mousePressEvent(QMouseEvent * event)
@@ -330,14 +342,14 @@ void QDisasmView::updateData()
     }
 }
 
-void QDisasmView::drawJump(QPainter &painter, int yFrom, int delta, int x, int cyLine, QColor color)
+void QDisasmView::drawJump(QPainter &painter, int yFrom, int delta, int x, QColor color)
 {
     int dist = abs(delta);
     if (dist < 2) dist = 2;
     if (dist > 20) dist = 16;
 
-    int yTo = yFrom + delta * cyLine - (cyLine * 2 / 3);
-    yFrom -= cyLine / 3;
+    int yTo = yFrom + delta * m_cyDisasmLine - (m_cyDisasmLine * 2 / 3);
+    yFrom -= m_cyDisasmLine / 3;
 
     QPainterPath path;
     path.moveTo(x, yFrom);
@@ -402,7 +414,7 @@ int QDisasmView::drawDisassemble(QPainter &painter, CProcessor *pProc, quint16 c
     int cyLine = fontmetrics.lineSpacing();
     m_cxDisasmBreakpointZone = cxChar * 2;
     m_cyDisasmLine = cyLine;
-    int xHint = 52 * cxChar;
+    int xHint = HINT_CHARPOS * cxChar;
     QColor colorBackground = palette().color(QPalette::Base);
     QColor colorText = palette().color(QPalette::Text);
     QColor colorPrev = Common_GetColorShifted(palette(), COLOR_PREVIOUS);
@@ -411,21 +423,24 @@ int QDisasmView::drawDisassemble(QPainter &painter, CProcessor *pProc, quint16 c
     QColor colorValueRom = Common_GetColorShifted(palette(), COLOR_VALUEROM);
     QColor colorSubtitle = Common_GetColorShifted(palette(), COLOR_SUBTITLE);
     QColor colorJump = Common_GetColorShifted(palette(), COLOR_JUMP);
-    QColor colorCurrent = palette().color(QPalette::Window);
+    QColor colorWindow = palette().color(QPalette::Window);
 
     quint16 proccurrent = pProc->GetPC();
+
+    // Draw breakpoint zone
+    painter.fillRect(0, 0, m_cxDisasmBreakpointZone, this->height(), colorWindow);
 
     // Draw current line background
     if (m_SubtitleItems.isEmpty())  //NOTE: Subtitles can move lines down
     {
         int yCurrent = (proccurrent - (current - 5)) * cyLine + fontmetrics.descent();
-        painter.fillRect(0, yCurrent, xHint, cyLine, colorCurrent);
+        painter.fillRect(0, yCurrent, xHint, cyLine, colorWindow);
     }
 
     int y = cyLine;
     for (int lineindex = 0; lineindex < m_DisasmLineItems.count(); lineindex++)  // Draw the lines
     {
-        DisasmLineItem& lineitem = m_DisasmLineItems[lineindex];
+        const DisasmLineItem& lineitem = m_DisasmLineItems[lineindex];
         if (lineitem.type == LINETYPE_NONE)
             break;
         quint16 address = lineitem.address;
@@ -445,11 +460,12 @@ int QDisasmView::drawDisassemble(QPainter &painter, CProcessor *pProc, quint16 c
 
         if (Emulator_IsBreakpoint(address))  // Breakpoint
         {
-            drawBreakpoint(painter, cxChar / 2, y, cxChar);
+            drawBreakpoint(painter, 0, y, (cxChar + cyLine) / 2);
         }
 
         painter.setPen(colorText);
         DrawOctalValue(painter, 5 * cxChar, y, address);  // Address
+
         // Value at the address
         quint16 value = lineitem.value;
         int memorytype = lineitem.addrtype;
@@ -510,7 +526,7 @@ int QDisasmView::drawDisassemble(QPainter &painter, CProcessor *pProc, quint16 c
                     QColor jumpcolor = colorJump;
                     if (address == proccurrent)
                         jumpcolor = Common_GetColorShifted(palette(), m_okDisasmJumpPredict ? COLOR_JUMPYES : COLOR_JUMPNO);
-                    drawJump(painter, y, delta, posAfterArgs * cxChar, cyLine, jumpcolor);
+                    drawJump(painter, y, delta, posAfterArgs * cxChar, jumpcolor);
                 }
             }
 
@@ -518,7 +534,7 @@ int QDisasmView::drawDisassemble(QPainter &painter, CProcessor *pProc, quint16 c
             {
                 int cyHint = cyLine * (*m_strDisasmHint2 == 0 ? 1 : 2);
                 QLinearGradient gradient(xHint, 0, xHint + 24 * cxChar, 0);
-                gradient.setColorAt(0, colorCurrent);
+                gradient.setColorAt(0, colorWindow);
                 gradient.setColorAt(1, colorBackground);
                 painter.fillRect(xHint, y - cyLine + fontmetrics.descent(), 24 * cxChar, cyHint, gradient);
 
