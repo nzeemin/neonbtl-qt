@@ -402,6 +402,8 @@ int QDisasmView::drawDisassemble(QPainter &painter, CProcessor *pProc, quint16 c
     int cyLine = fontmetrics.lineSpacing();
     m_cxDisasmBreakpointZone = cxChar * 2;
     m_cyDisasmLine = cyLine;
+    int xHint = 52 * cxChar;
+    QColor colorBackground = palette().color(QPalette::Base);
     QColor colorText = palette().color(QPalette::Text);
     QColor colorPrev = Common_GetColorShifted(palette(), COLOR_PREVIOUS);
     QColor colorChanged = Common_GetColorShifted(palette(), COLOR_VALUECHANGED);
@@ -409,6 +411,7 @@ int QDisasmView::drawDisassemble(QPainter &painter, CProcessor *pProc, quint16 c
     QColor colorValueRom = Common_GetColorShifted(palette(), COLOR_VALUEROM);
     QColor colorSubtitle = Common_GetColorShifted(palette(), COLOR_SUBTITLE);
     QColor colorJump = Common_GetColorShifted(palette(), COLOR_JUMP);
+    QColor colorCurrent = palette().color(QPalette::Window);
 
     quint16 proccurrent = pProc->GetPC();
 
@@ -416,8 +419,7 @@ int QDisasmView::drawDisassemble(QPainter &painter, CProcessor *pProc, quint16 c
     if (m_SubtitleItems.isEmpty())  //NOTE: Subtitles can move lines down
     {
         int yCurrent = (proccurrent - (current - 5)) * cyLine + fontmetrics.descent();
-        QColor colorCurrent = palette().color(QPalette::Window);
-        painter.fillRect(0, yCurrent, this->width(), cyLine, colorCurrent);
+        painter.fillRect(0, yCurrent, xHint, cyLine, colorCurrent);
     }
 
     int y = cyLine;
@@ -514,11 +516,17 @@ int QDisasmView::drawDisassemble(QPainter &painter, CProcessor *pProc, quint16 c
 
             if (address == proccurrent && *m_strDisasmHint != 0)  // For current instruction, draw "Instruction Hints"
             {
+                int cyHint = cyLine * (*m_strDisasmHint2 == 0 ? 1 : 2);
+                QLinearGradient gradient(xHint, 0, xHint + 24 * cxChar, 0);
+                gradient.setColorAt(0, colorCurrent);
+                gradient.setColorAt(1, colorBackground);
+                painter.fillRect(xHint, y - cyLine + fontmetrics.descent(), 24 * cxChar, cyHint, gradient);
+
                 QColor hintcolor = Common_GetColorShifted(palette(), isjump ? COLOR_JUMPHINT : COLOR_HINT);
                 painter.setPen(hintcolor);
-                painter.drawText(52 * cxChar, y, m_strDisasmHint);
+                painter.drawText(xHint, y, m_strDisasmHint);
                 if (*m_strDisasmHint2 != 0)
-                    painter.drawText(52 * cxChar, y + cyLine, m_strDisasmHint2);
+                    painter.drawText(xHint, y + cyLine, m_strDisasmHint2);
                 painter.setPen(colorText);
             }
         }
