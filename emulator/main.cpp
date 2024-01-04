@@ -54,9 +54,9 @@ int main(int argc, char *argv[])
     QApplication application(argc, argv);
     g_Application = &application;
 
-//    QTranslator translator;
-//    translator.load("neonbtl_en.tr");
-//    application.installTranslator(&translator);
+    // QTranslator translator;
+    // translator.load("neonbtl_ru.tr");
+    // application.installTranslator(&translator);
 
     QSettings settings(QSettings::IniFormat, QSettings::UserScope, "Back to Life", "NEONBTL");
     g_Settings = &settings;

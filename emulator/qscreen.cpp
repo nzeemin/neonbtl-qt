@@ -67,7 +67,7 @@ void QEmulatorScreen::paintEvent(QPaintEvent * /*event*/)
 void QEmulatorScreen::contextMenuEvent(QContextMenuEvent *event)
 {
     QMenu menu(this);
-    menu.addAction(tr("Screenshot"), Global_getMainWindow(), SLOT(saveScreenshot()));
+    menu.addAction(QIcon(":/images/iconScreenshot.svg"), tr("Screenshot"), Global_getMainWindow(), SLOT(saveScreenshot()));
     menu.addAction(tr("Screenshot to Clipboard"), Global_getMainWindow(), SLOT(screenshotToClipboard()));
     menu.exec(event->globalPos());
 }
