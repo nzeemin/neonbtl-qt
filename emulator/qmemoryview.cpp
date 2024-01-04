@@ -118,7 +118,7 @@ void QMemoryView::focusOutEvent(QFocusEvent *)
 void QMemoryView::contextMenuEvent(QContextMenuEvent *event)
 {
     QMenu menu(this);
-    menu.addAction(tr("Go to Address..."), this, SLOT(gotoAddress()));
+    menu.addAction(QIcon(":/images/iconEditAddress.svg"), tr("Go to Address..."), this, SLOT(gotoAddress()));
     menu.addSeparator();
 
     for (int mode = 0; mode <= MEMMODE_LAST; mode++)
@@ -132,8 +132,8 @@ void QMemoryView::contextMenuEvent(QContextMenuEvent *event)
     }
 
     menu.addSeparator();
-    menu.addAction(tr("Words / Bytes"), this, SLOT(changeWordByteMode()));
-    menu.addAction(tr("Octal / Hex"), this, SLOT(changeNumeralMode()));
+    menu.addAction(QIcon(":/images/iconWordByte.svg"), tr("Words / Bytes"), this, SLOT(changeWordByteMode()));
+    menu.addAction(QIcon(":/images/iconHex.svg"), tr("Octal / Hex"), this, SLOT(changeNumeralMode()));
 
     menu.exec(event->globalPos());
 }
@@ -305,8 +305,8 @@ void QMemoryView::paintEvent(QPaintEvent * /*event*/)
         ushort wchars[16];
         for (int j = 0; j < 8; j++)    // Draw words as octal value
         {
-            int addrtype;
             bool okValid = false;
+            int addrtype;
             quint16 wChanged = 0;
             quint16 word = getWordFromMemory(address, okValid, addrtype, wChanged);
 
@@ -341,12 +341,12 @@ void QMemoryView::paintEvent(QPaintEvent * /*event*/)
                 if (addrtype == ADDRTYPE_IO)
                 {
                     painter.setPen(colorMemoryIO);
-                    painter.drawText(x, y, "  IO");
+                    painter.drawText(x + (m_PostionIncrement - cxChar) / 2 - cxChar, y, "IO");
                 }
                 else
                 {
                     painter.setPen(colorMemoryNA);
-                    painter.drawText(x, y, "  NA");
+                    painter.drawText(x + (m_PostionIncrement - cxChar) / 2 - cxChar, y, "NA");
                 }
             }
 
@@ -407,8 +407,14 @@ void QMemoryView::keyPressEvent(QKeyEvent *event)
         gotoAddress();
         break;
     case Qt::Key_B:
+    case Qt::Key_W:
         event->accept();
         changeWordByteMode();
+        break;
+    case Qt::Key_H:
+    case Qt::Key_O:
+        event->accept();
+        changeNumeralMode();
         break;
 
     case Qt::Key_Up:
