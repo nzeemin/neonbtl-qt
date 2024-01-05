@@ -67,8 +67,9 @@ void QConsoleView::updatePrompt()
 {
     CProcessor* pProc = getCurrentProcessor();
     if (pProc == nullptr) return;
-    char buffer[12];
-    _snprintf(buffer, 12, " %06o> ", pProc->GetPC());
+    char buffer[13];
+    char chHaltUser = pProc->IsHaltMode() ? 'H' : 'U';
+    _snprintf(buffer, sizeof(buffer) / sizeof(char) - 1, " %c%06o> ", chHaltUser, pProc->GetPC());
     m_prompt->setText(buffer);
 }
 
@@ -89,8 +90,9 @@ void QConsoleView::printLine(const QString &message)
 void QConsoleView::printConsolePrompt()
 {
     CProcessor* pProc = getCurrentProcessor();
-    char buffer[10];
-    _snprintf(buffer, 10, "%06o> ", pProc->GetPC());
+    char buffer[14];
+    char chHaltUser = pProc->IsHaltMode() ? 'H' : 'U';
+    _snprintf(buffer, sizeof(buffer) / sizeof(char) - 1, "%c%06o> ", chHaltUser, pProc->GetPC());
     this->print(buffer);
 }
 

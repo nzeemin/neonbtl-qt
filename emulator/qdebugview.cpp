@@ -55,6 +55,7 @@ QDebugView::QDebugView(QWidget *mainWindow) :
     m_memmapCtrl->setGeometry(x, 0, cxMemmap, cyHeight);
 
     m_actionDebugger = m_toolbar->addAction(QIcon(":/images/iconDebugger.svg"), "");
+    m_toolbar->addSeparator();
     QAction* actionStepInto = m_toolbar->addAction(QIcon(":/images/iconStepInto.svg"), "");
     QAction* actionStepOver = m_toolbar->addAction(QIcon(":/images/iconStepOver.svg"), "");
     m_actionDebugger->setCheckable(true);
