@@ -77,12 +77,23 @@ bool AlertOkCancel(const QString &sMessage);
 //////////////////////////////////////////////////////////////////////
 // DebugPrint
 
+#if defined(QT_NO_DEBUG)
+#define PRODUCT 1
+#endif
+
 #if !defined(PRODUCT)
 
 void DebugPrint(const char* message);
 void DebugPrintFormat(const char* pszFormat, ...);
 void DebugLog(const char* message);
 void DebugLogFormat(const char* pszFormat, ...);
+
+#else
+
+#define DebugPrint(_t)
+#define DebugPrintFormat(_t1, ...)
+#define DebugLog(_t)
+#define DebugLogFormat(_t1, ...)
 
 #endif // !defined(PRODUCT)
 
