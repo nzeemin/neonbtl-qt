@@ -1,11 +1,11 @@
 ﻿/*  This file is part of NEONBTL.
-NEONBTL is free software: you can redistribute it and/or modify it under the terms
+    NEONBTL is free software: you can redistribute it and/or modify it under the terms
 of the GNU Lesser General Public License as published by the Free Software Foundation,
 either version 3 of the License, or (at your option) any later version.
-NEONBTL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+    NEONBTL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU Lesser General Public License for more details.
-You should have received a copy of the GNU Lesser General Public License along with
+    You should have received a copy of the GNU Lesser General Public License along with
 NEONBTL. If not, see <http://www.gnu.org/licenses/>. */
 
 // Board.cpp
@@ -42,9 +42,9 @@ CMotherboard::CMotherboard()
 
     // Allocate memory
     m_nRamSizeBytes = 0;
-    m_pRAM = nullptr;  // RAM allocation in SetConfiguration() method
-    m_pROM = static_cast<uint8_t*>(::calloc(16 * 1024, 1));
-    m_pHDbuff = static_cast<uint8_t*>(::calloc(4 * 512, 1));
+    m_pRAM = static_cast<uint8_t*>(::calloc(4096 * 1024, 1));  // 4MB
+    m_pROM = static_cast<uint8_t*>(::calloc(16 * 1024, 1));  // 16K
+    m_pHDbuff = static_cast<uint8_t*>(::calloc(4 * 512, 1));  // 2K
 
     m_PPIAwr = m_PPIArd = m_PPIBwr = 0;
     m_PPIBrd = 11;  // IHLT EF1 EF0 - инверсные
@@ -63,6 +63,8 @@ CMotherboard::CMotherboard()
     m_keyint = false;
     m_keypos = 0;
     m_mousest = m_mousedx = m_mousedy = 0;
+
+    m_rtcticks = 0;
 
     SetConfiguration(0);  // Default configuration
 
@@ -88,15 +90,35 @@ CMotherboard::~CMotherboard()
 
 void CMotherboard::SetConfiguration(uint16_t conf)
 {
-    m_Configuration = conf;
-
-    // Allocate RAM; clean RAM/ROM
-    ::free(m_pRAM);
+    // Check RAM bits and set them properly, if not
     uint32_t nRamSizeKbytes = conf & NEON_COPT_RAMSIZE_MASK;
     if (nRamSizeKbytes == 0)
         nRamSizeKbytes = 512;
+    if ((conf & NEON_COPT_RAMBANK0_MASK) == 0)
+    {
+        conf &= ~(NEON_COPT_RAMBANK0_MASK | NEON_COPT_RAMBANK1_MASK);
+        switch (nRamSizeKbytes)
+        {
+        default:
+        case 512:
+            conf |= 1 << 4;  // 2 x 256K = 512K
+            break;
+        case 1024:
+            conf |= (1 << 4) | (1 << 6);  // 2 x 256K + 2 x 256K = 1024K
+            break;
+        case 2048:
+            conf |= 2 << 4;  // 2 x 1024K = 2048K
+            break;
+        case 4096:
+            conf |= (2 << 4) | (2 << 6);  // 2 x 1024K + 2 x 1024K = 4096K
+            break;
+        }
+    }
+
+    m_Configuration = conf;
     m_nRamSizeBytes = nRamSizeKbytes * 1024;
-    m_pRAM = static_cast<uint8_t*>(::calloc(m_nRamSizeBytes, 1));
+
+    // Allocate RAM; clean RAM/ROM
     ::memset(m_pROM, 0, 16 * 1024);
 
     //// Pre-fill RAM with "uninitialized" values
@@ -149,13 +171,6 @@ void CMotherboard::Reset()
 void CMotherboard::LoadROM(const uint8_t* pBuffer)
 {
     ::memcpy(m_pROM, pBuffer, 16384);
-}
-
-void CMotherboard::LoadRAMBank(int bank, const void* buffer)
-{
-    if (bank < 0 || bank > (int)(m_nRamSizeBytes / 8192))
-        return;
-    memcpy(m_pRAM + bank * 8192, buffer, 8192);
 }
 
 
@@ -278,7 +293,7 @@ void CMotherboard::SetHardPortWord(uint16_t port, uint16_t data)
 
 uint16_t CMotherboard::GetRAMWord(uint32_t offset) const
 {
-    ASSERT(offset < m_nRamSizeBytes);
+    ASSERT(offset < 4096 * 1024);
     return *((uint16_t*)(m_pRAM + offset));
 }
 uint8_t CMotherboard::GetRAMByte(uint32_t offset) const
@@ -350,7 +365,7 @@ void CMotherboard::ResetDevices()
     //TODO
 }
 
-void CMotherboard::Tick50()  // 50 Hz timer
+void CMotherboard::Tick50()  // 64 Hz / 50 Hz timer
 {
     //NOTE: На разных платах на INT5 ВН59 идет либо сигнал от RTC 64 Гц либо кадровая синхронизация 50 Гц
     SetPICInterrupt(5);  // Сигнал 50 Гц приводит к прерыванию 5
@@ -474,25 +489,25 @@ void CMotherboard::DebugTicks()
     m_pFloppyCtl->Periodic();
 }
 
-
 /*
-Каждый фрейм равен 1/25 секунды = 40 мс = 20000 тиков, 1 тик = 2 мкс.
+Каждый фрейм равен 1/25 секунды = 40 мс = 40000 тиков, 1 тик = 1 мкс.
 В каждый фрейм происходит:
-* 320000 тиков ЦП - 16 раз за тик - 8 МГц
+* 320000 тиков ЦП - 8 раз за тик - 8 МГц
 * программируемый таймер - на каждый 4-й тик процессора - 2 МГц
-* 2 тика 50 Гц, в 0-й и 10000-й тик фрейма
-* 625 тиков FDD - каждый 32-й тик (300 RPM = 5 оборотов в секунду)
+* 2 тика 50 Гц
+* 2.56 тика 64 Гц
+* 625 тиков FDD - каждый 64-й тик (300 RPM = 5 оборотов в секунду)
 * 882 тиков звука (для частоты 22050 Гц)
 */
 bool CMotherboard::SystemFrame()
 {
     const int soundSamplesPerFrame = SOUNDSAMPLERATE / 25;
     int soundBrasErr = 0;
-    int snl0 = 0, snl1 = 0, snl2 = 0, soundTicks = 0, snd0 = 0, snd1 = 0, snd2 = 0;//DEBUG
+    int snl0 = 0, snl1 = 0, snl2 = 0, soundTicks = 0, snd0 = 0, snd1 = 0, snd2 = 0;
 
-    for (int frameticks = 0; frameticks < 20000; frameticks++)
+    for (int frameticks = 0; frameticks < 40000; frameticks++)
     {
-        for (int procticks = 0; procticks < 16; procticks++)  // CPU ticks
+        for (int procticks = 0; procticks < 8; procticks++)  // CPU ticks
         {
 #if !defined(PRODUCT)
             if ((m_dwTrace & TRACE_CPU) != 0 && m_pCPU->GetInternalTick() == 0)
@@ -505,16 +520,17 @@ bool CMotherboard::SystemFrame()
 
             if (m_CPUbps != nullptr)  // Check for breakpoints
             {
-                const uint16_t* pbps = m_CPUbps;
-                while (*pbps != 0177777) { if (m_pCPU->GetPC() == *pbps++) return false; }
+                uint32_t cpucurrent = (m_pCPU->GetPC() & 0xffff) | (m_pCPU->IsHaltMode() ? BREAKPOINT_HALT : 0);
+                const uint32_t* pbps = m_CPUbps;
+                while (*pbps != NOBREAKPOINT) { if (cpucurrent == *pbps++) return false; }
             }
 
             if ((procticks & 3) == 3)  // Every 4th tick
             {
                 TimerTick();
-                //snd0 += m_snd.GetOutput(0) ? 1 : 0;
-                //snd1 += m_snd.GetOutput(1) ? 1 : 0;
-                //snd2 += m_snd.GetOutput(2) ? 1 : 0;
+                snd0 += m_snd.GetOutput(0) ? 1 : 0;
+                snd1 += m_snd.GetOutput(1) ? 1 : 0;
+                snd2 += m_snd.GetOutput(2) ? 1 : 0;
                 snl0 += m_snl.GetOutput(0) ? 1 : 0;
                 snl1 += m_snl.GetOutput(1) ? 1 : 0;
                 snl2 += m_snl.GetOutput(2) ? 1 : 0;
@@ -522,23 +538,33 @@ bool CMotherboard::SystemFrame()
             }
         }
 
-        if (frameticks % 10000 == 5000)
-            Tick50();  // 1/50 timer event
+        m_rtcticks++;
+        if (m_timer50or64)
+        {
+            if (frameticks % 20000 == 10000)  // 50 Hz
+                Tick50();
+        }
+        else
+        {
+            if (m_rtcticks >= 15625)  // 64 Hz RTC tick
+                Tick50();
+        }
+        if (m_rtcticks >= 15625) m_rtcticks = 0;
 
-        if (frameticks % 32 == 0)  // FDD tick
+        if (frameticks % 64 == 0)  // FDD tick
             m_pFloppyCtl->Periodic();
 
         if (m_pHardDrive != nullptr)
             m_pHardDrive->Periodic();
 
         soundBrasErr += soundSamplesPerFrame;
-        if (2 * soundBrasErr >= 20000)
+        if (2 * soundBrasErr >= 40000)
         {
-            soundBrasErr -= 20000;
+            soundBrasErr -= 40000;
             //DebugLogFormat(_T("SoundSNL %02d  %2d %2d %2d  %2d %2d %2d\r\n"), soundTicks, snd0, snd1, snd2, snl0, snl1, snl2);
-            uint16_t s0 = (uint16_t)((soundTicks - snl0) * 512 / soundTicks);
-            uint16_t s1 = (uint16_t)((soundTicks - snl1) * 512 / soundTicks);
-            uint16_t s2 = (uint16_t)((soundTicks - snl2) * 512 / soundTicks);
+            uint16_t s0 = (uint16_t)((snd0 * 255 / soundTicks) * (snl0 * 255 / soundTicks));
+            uint16_t s1 = (uint16_t)((snd1 * 255 / soundTicks) * (snl1 * 255 / soundTicks));
+            uint16_t s2 = (uint16_t)((snd2 * 255 / soundTicks) * (snl1 * 255 / soundTicks));
             DoSound(s0, s1, s2);
             soundTicks = 0; snl0 = snl1 = snl2 = 0; snd0 = snd1 = snd2 = 0;
         }
@@ -572,13 +598,25 @@ bool CMotherboard::SystemFrame()
 // Read word from memory for debugger
 uint8_t CMotherboard::GetRAMByteView(uint32_t offset) const
 {
-    if (offset >= m_nRamSizeBytes)
+    bool okBank = offset >= 2048 * 1024;  // false for BANK 0, true for BANK 1
+    uint16_t bankbits = (okBank ? m_Configuration >> 6 : m_Configuration >> 4) & 3;  // 00 ничего, 01 256K планки, 10 1024К планки
+    if (bankbits == 0)
+        return 0;  // No RAM in this bank
+    if (bankbits == 1)  // 2 x 256K
+        offset &= ~0x180000;  // limit to 512K
+    if (offset >= 4096 * 1024)
         return 0;
     return m_pRAM[offset];
 }
 uint16_t CMotherboard::GetRAMWordView(uint32_t offset) const
 {
-    if (offset >= m_nRamSizeBytes - 1)
+    bool okBank = offset >= 2048 * 1024;  // false for BANK 0, true for BANK 1
+    uint16_t bankbits = (okBank ? m_Configuration >> 6 : m_Configuration >> 4) & 3;  // 00 ничего, 01 256K планки, 10 1024К планки
+    if (bankbits == 0)
+        return 0;  // No RAM in this bank
+    if (bankbits == 1)  // 2 x 256K
+        offset &= ~0x180000;  // limit to 512K
+    if (offset >= 4096 * 1024)
         return 0;
     return *(uint16_t*)(m_pRAM + offset);
 }
@@ -597,12 +635,12 @@ uint16_t CMotherboard::GetWordView(uint16_t address, bool okHaltMode, bool okExe
         return GetRAMWord(offset & ~1);
     case ADDRTYPE_ROM:
         return GetROMWord(offset & 0xfffe);
-    case ADDRTYPE_IO:
-        return 0;  // I/O port, not memory
     case ADDRTYPE_EMUL:
         return GetRAMWord(offset & 07776);  // I/O port emulation
-    case ADDRTYPE_DENY:
-        return 0;  // This memory is inaccessible for reading
+    case ADDRTYPE_IO:    // I/O port, not memory
+    case ADDRTYPE_DENY:  // No RAM here
+    case ADDRTYPE_NULL:  // This memory is inaccessible for reading
+        return 0;
     }
 
     ASSERT(false);  // If we are here - then addrtype has invalid value
@@ -644,6 +682,8 @@ uint16_t CMotherboard::GetWord(uint16_t address, bool okHaltMode, bool okExec)
         res = GetRAMWord(offset & 07776);
         DebugLogFormat(_T("%c%06ho\tGETWORD %06ho EMUL -> %06ho\n"), HU_INSTRUCTION_PC, address, res);
         return res;
+    case ADDRTYPE_NULL:
+        return 0;
     case ADDRTYPE_DENY:
         DebugLogFormat(_T("%c%06ho\tGETWORD DENY %06ho\n"), HU_INSTRUCTION_PC, address);
         m_pCPU->MemoryError();
@@ -681,6 +721,8 @@ uint8_t CMotherboard::GetByte(uint16_t address, bool okHaltMode)
         resb = GetRAMByte(offset & 07777);
         DebugLogFormat(_T("%c%06ho\tGETBYTE %06ho EMUL %03ho\n"), HU_INSTRUCTION_PC, address, resb);
         return resb;
+    case ADDRTYPE_NULL:
+        return 0;
     case ADDRTYPE_DENY:
         DebugLogFormat(_T("%c%06ho\tGETBYTE DENY (%06ho)\n"), HU_INSTRUCTION_PC, address);
         m_pCPU->MemoryError();
@@ -729,6 +771,8 @@ void CMotherboard::SetWord(uint16_t address, bool okHaltMode, uint16_t word, boo
         m_PPIBrd &= ~3;  // set EF1,EF0 active
         m_pCPU->SetHALTPin(true);
         return;
+    case ADDRTYPE_NULL:
+        return;
     case ADDRTYPE_DENY:
         DebugLogFormat(_T("%c%06ho\tSETWORD DENY (%06ho)\n"), HU_INSTRUCTION_PC, address);
         m_pCPU->MemoryError();
@@ -774,6 +818,8 @@ void CMotherboard::SetByte(uint16_t address, bool okHaltMode, uint8_t byte, bool
         m_PPIBrd &= ~3;  // set EF1,EF0 active
         m_pCPU->SetHALTPin(true);
         return;
+    case ADDRTYPE_NULL:
+        return;
     case ADDRTYPE_DENY:
         DebugLogFormat(_T("%c%06ho\tSETBYTE DENY (%06ho)\n"), HU_INSTRUCTION_PC, address);
         m_pCPU->MemoryError();
@@ -793,7 +839,7 @@ int CMotherboard::TranslateAddress(uint16_t address, bool okHaltMode, bool /*okE
 
     if (address >= 0160000)
     {
-        if (address < 0170000)
+        if (address < 0174000)  // Диапазон 160000-173777 это устройства ввода-вывода
         {
             *pOffset = address;
             return ADDRTYPE_IO;
@@ -825,11 +871,17 @@ int CMotherboard::TranslateAddress(uint16_t address, bool okHaltMode, bool /*okE
         return ADDRTYPE_DENY;
     }
     uint32_t longaddr = ((uint32_t)(address & 017777)) + (((uint32_t)(memreg & 037760)) << 8);
-    if (longaddr >= m_nRamSizeBytes)
+
+    // RAM banks logic
+    bool okBank = longaddr >= 2048 * 1024;  // false for BANK 0, true for BANK 1
+    uint16_t bankbits = (okBank ? m_Configuration >> 6 : m_Configuration >> 4) & 3;  // 00 ничего, 01 256K планки, 10 1024К планки
+    if (bankbits == 0)  // no RAM in this bank
     {
         *pOffset = 0;
-        return ADDRTYPE_DENY;
+        return ADDRTYPE_NULL;
     }
+    if (bankbits == 1)
+        longaddr &= ~0x180000;  // limit to 512K
 
     *pOffset = longaddr;
     uint16_t maskmode = memreg & 3;
@@ -1092,7 +1144,9 @@ void CMotherboard::SetPortByte(uint16_t address, uint8_t byte)
 
 void CMotherboard::SetPortWord(uint16_t address, uint16_t word)
 {
+#if !defined(PRODUCT)
     TCHAR buffer[17];
+#endif
 
     switch (address)
     {
@@ -1443,7 +1497,7 @@ void CMotherboard::ProcessRtcWrite(uint16_t address, uint8_t byte)
 //    2560    512 bytes  - RESERVED
 //    3072  16384 bytes  - ROM image 16K
 //   19456   1024 bytes  - RESERVED
-//   20480               - RAM image 512/1024/2048/4096 KB
+//   20480               - RAM image 4096 KB
 //
 //  Board status (400 bytes):
 //      32      2 bytes  - configuration
@@ -1525,10 +1579,10 @@ void CMotherboard::SaveToImage(uint8_t* pImage)
     *pImageTimer++ = (uint8_t)lnow->tm_mday;  // Day of month
     *pImageTimer++ = (uint8_t)lnow->tm_mon;  // Month
     *pImageTimer++ = (uint8_t)(lnow->tm_year % 100);  // Year
-    *pImageTimer++ = 0;
-    *pImageTimer++ = 0;
-    *pImageTimer++ = 0;
-    *pImageTimer++ = 0;
+    *pImageTimer++ = 0;  // RESERVED
+    *pImageTimer++ = 0;  // RESERVED
+    *(uint16_t*)pImageTimer = m_rtcticks;
+    pImageTimer += 2;
     memcpy(pImageTimer, m_rtcmemory, sizeof(m_rtcmemory));  // 50 bytes
 
     // CPU status
@@ -1542,7 +1596,7 @@ void CMotherboard::SaveToImage(uint8_t* pImage)
     memcpy(pImageRom, m_pROM, 16 * 1024);
     // RAM
     uint8_t* pImageRam = pImage + 20480;
-    memcpy(pImageRam, m_pRAM, m_nRamSizeBytes);
+    memcpy(pImageRam, m_pRAM, 4096 * 1024);
 }
 void CMotherboard::LoadFromImage(const uint8_t* pImage)
 {
@@ -1556,11 +1610,6 @@ void CMotherboard::LoadFromImage(const uint8_t* pImage)
         nRamSizeKbytes = 512;
     uint32_t newramsize = nRamSizeKbytes * 1024;
     //memcpy(&newramsize, pwImage, sizeof(newramsize));  // 4 bytes
-    if (m_nRamSizeBytes != newramsize)
-    {
-        ::realloc(m_pRAM, newramsize);
-        m_nRamSizeBytes = newramsize;
-    }
     pwImage += sizeof(m_nRamSizeBytes) / 2;
     m_PICflags = *pwImage++;
     m_PICRR = (uint8_t) * pwImage++;
@@ -1611,7 +1660,9 @@ void CMotherboard::LoadFromImage(const uint8_t* pImage)
     pImageTimer++;  // Day of month
     pImageTimer++;  // Month
     pImageTimer++;  // Year
-    pImageTimer += 4;
+    pImageTimer += 2;  // RESERVED
+    m_rtcticks = *(const uint16_t*)pImageTimer;
+    pImageTimer += 2;
     memcpy(m_rtcmemory, pImageTimer, sizeof(m_rtcmemory));  // 50 bytes
 
     // CPU status
@@ -1625,7 +1676,7 @@ void CMotherboard::LoadFromImage(const uint8_t* pImage)
     memcpy(m_pROM, pImageRom, 16 * 1024);
     // RAM
     const uint8_t* pImageRam = pImage + 20480;
-    memcpy(m_pRAM, pImageRam, m_nRamSizeBytes);
+    memcpy(m_pRAM, pImageRam, 4096 * 1024);
 }
 
 
@@ -1636,7 +1687,7 @@ void CMotherboard::DoSound(uint16_t s0, uint16_t s1, uint16_t s2)
     if (m_SoundGenCallback == nullptr)
         return;
 
-    uint16_t sound = (s0 + s1 + s2) * 21;
+    uint16_t sound = (uint16_t)(((uint32_t)s0 + (uint32_t)s1 + (uint32_t)s2) / 3);
 
     (*m_SoundGenCallback)(sound, sound);
 }

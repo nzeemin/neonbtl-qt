@@ -27,12 +27,13 @@ bool Emulator_Init();
 bool Emulator_InitConfiguration(NeonConfiguration configuration);
 void Emulator_Done();
 
-bool Emulator_AddCPUBreakpoint(quint16 address);
-bool Emulator_RemoveCPUBreakpoint(quint16 address);
-void Emulator_SetTempCPUBreakpoint(quint16 address);
-const quint16* Emulator_GetCPUBreakpointList();
+bool Emulator_AddCPUBreakpoint(quint16 address, bool ishalt);
+bool Emulator_RemoveCPUBreakpoint(quint16 address, bool ishalt);
+bool Emulator_RemoveCPUBreakpoint(quint32 bpvalue);
+void Emulator_SetTempCPUBreakpoint(quint16 address, bool ishalt);
+const quint32* Emulator_GetCPUBreakpointList();
 bool Emulator_IsBreakpoint();
-bool Emulator_IsBreakpoint(quint16 address);
+bool Emulator_IsBreakpoint(quint16 address, bool ishalt);
 void Emulator_RemoveAllBreakpoints();
 
 const quint16* Emulator_GetWatchList();

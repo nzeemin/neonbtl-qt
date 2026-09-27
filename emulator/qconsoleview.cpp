@@ -236,7 +236,9 @@ void QConsoleView::cmdShowHelp(const ConsoleCommandParams& /*params*/)
             "  so         Step Over; executes and stops after the current instruction\r\n"
             "  b          List breakpoints set\r\n"
             "  bXXXXXX    Set breakpoint at address XXXXXX\r\n"
+            "  bUXXXXXX or bHXXXXXX  Set breakpoint at USER or HALT address XXXXXX\r\n"
             "  bcXXXXXX   Remove breakpoint at address XXXXXX\r\n"
+            "  bcUXXXXXX or bcHXXXXXX  Remove breakpoint at USER or HALT address XXXXXX\r\n"
             "  bc         Remove all breakpoints\r\n"
 //            "  u          Save memory dump to file memdump.bin\r\n"
                   ));
@@ -318,11 +320,12 @@ void QConsoleView::cmdStepInto(const ConsoleCommandParams &)
 void QConsoleView::cmdStepOver(const ConsoleCommandParams &)
 {
     CProcessor* pProc = getCurrentProcessor();
+    bool okHaltMode = pProc->IsHaltMode();
 
     int instrLength = this->printDisassemble(pProc->GetPC(), true, false);
     quint16 bpaddress = pProc->GetPC() + instrLength * 2;
 
-    Emulator_SetTempCPUBreakpoint(bpaddress);
+    Emulator_SetTempCPUBreakpoint(bpaddress, okHaltMode);
     Emulator_Start();
 
     Global_UpdateMenu();
@@ -395,8 +398,10 @@ void QConsoleView::cmdPrintMemoryDumpAtPC(const ConsoleCommandParams &)
 void QConsoleView::cmdRunToAddress(const ConsoleCommandParams & params)
 {
     quint16 value = params.paramOct1;
+    CProcessor* pProc = getCurrentProcessor();
+    bool okHaltMode = pProc->IsHaltMode();
 
-    Emulator_SetTempCPUBreakpoint(value);
+    Emulator_SetTempCPUBreakpoint(value, okHaltMode);
     Emulator_Start();
 
     Global_UpdateMenu();
@@ -408,11 +413,35 @@ void QConsoleView::cmdRun(const ConsoleCommandParams &)
     Global_UpdateAllViews();
 }
 
-void QConsoleView::cmdSetBreakpointAtAddress(const ConsoleCommandParams & params)
+void QConsoleView::cmdSetBreakpointUserAtAddress(const ConsoleCommandParams & params)
 {
     quint16 value = params.paramOct1;
 
-    bool result = Emulator_AddCPUBreakpoint(value);
+    bool result = Emulator_AddCPUBreakpoint(value, false);
+    if (!result)
+        this->print(tr("  Failed to add breakpoint.\r\n"));
+    Global_RedrawDebugView();
+    Global_RedrawDisasmView();
+}
+
+void QConsoleView::cmdSetBreakpointHaltAtAddress(const ConsoleCommandParams & params)
+{
+    quint16 value = params.paramOct1;
+
+    bool result = Emulator_AddCPUBreakpoint(value, true);
+    if (!result)
+        this->print(tr("  Failed to add breakpoint.\r\n"));
+    Global_RedrawDebugView();
+    Global_RedrawDisasmView();
+}
+
+void QConsoleView::cmdSetBreakpointAtAddress(const ConsoleCommandParams & params)
+{
+    quint16 value = params.paramOct1;
+    CProcessor* pProc = getCurrentProcessor();
+    bool okHaltMode = pProc->IsHaltMode();
+
+    bool result = Emulator_AddCPUBreakpoint(value, okHaltMode);
     if (!result)
         this->print(tr("  Failed to add breakpoint.\r\n"));
     Global_RedrawDebugView();
@@ -421,26 +450,53 @@ void QConsoleView::cmdSetBreakpointAtAddress(const ConsoleCommandParams & params
 
 void QConsoleView::cmdPrintAllBreakpoints(const ConsoleCommandParams &)
 {
-    const quint16* pbps = Emulator_GetCPUBreakpointList();
-    if (pbps == nullptr || *pbps == 0177777)
+    const quint32* pbps = Emulator_GetCPUBreakpointList();
+    if (pbps == nullptr || *pbps == NOBREAKPOINT)
     {
         this->print(tr("  No breakpoints.\r\n"));
         return;
     }
 
-    while (*pbps != 0177777)
+    while (*pbps != NOBREAKPOINT)
     {
-        QString line;  line.sprintf("  %06ho\r\n", *pbps);
+        quint32 bpvalue = *pbps;
+        quint16 address = bpvalue & 0xffff;
+        QChar huch = (bpvalue & BREAKPOINT_HALT) != 0 ? QLatin1Char('H') : QLatin1Char('U');
+        QString line;  line.sprintf("  %c%06ho\r\n", huch.toLatin1(), address);
         this->print(line);
         pbps++;
     }
 }
 
-void QConsoleView::cmdRemoveBreakpointAtAddress(const ConsoleCommandParams & params)
+void QConsoleView::cmdRemoveBreakpointUserAtAddress(const ConsoleCommandParams & params)
 {
     quint16 value = params.paramOct1;
 
-    bool result = Emulator_RemoveCPUBreakpoint(value);
+    bool result = Emulator_RemoveCPUBreakpoint(value, false);
+    if (!result)
+        this->print("  Failed to remove breakpoint.\r\n");
+    Global_RedrawDebugView();
+    Global_RedrawDisasmView();
+}
+
+void QConsoleView::cmdRemoveBreakpointHaltAtAddress(const ConsoleCommandParams & params)
+{
+    quint16 value = params.paramOct1;
+
+    bool result = Emulator_RemoveCPUBreakpoint(value, true);
+    if (!result)
+        this->print("  Failed to remove breakpoint.\r\n");
+    Global_RedrawDebugView();
+    Global_RedrawDisasmView();
+}
+
+void QConsoleView::cmdRemoveBreakpointAtAddress(const ConsoleCommandParams & params)
+{
+    quint16 value = params.paramOct1;
+    CProcessor* pProc = getCurrentProcessor();
+    bool okHaltMode = pProc->IsHaltMode();
+
+    bool result = Emulator_RemoveCPUBreakpoint(value, okHaltMode);
     if (!result)
         this->print("  Failed to remove breakpoint.\r\n");
     Global_RedrawDebugView();
@@ -498,8 +554,12 @@ static ConsoleCommands[] =
     { _T("m"), ARGINFO_NONE, &QConsoleView::cmdPrintMemoryDumpAtPC },
     { _T("g%ho"), ARGINFO_OCT, &QConsoleView::cmdRunToAddress },
     { _T("g"), ARGINFO_NONE, &QConsoleView::cmdRun },
+    { _T("bU%ho"), ARGINFO_OCT, &QConsoleView::cmdSetBreakpointUserAtAddress },
+    { _T("bH%ho"), ARGINFO_OCT, &QConsoleView::cmdSetBreakpointHaltAtAddress },
     { _T("b%ho"), ARGINFO_OCT, &QConsoleView::cmdSetBreakpointAtAddress },
     { _T("b"), ARGINFO_NONE, &QConsoleView::cmdPrintAllBreakpoints },
+    { _T("bcU%ho"), ARGINFO_OCT, &QConsoleView::cmdRemoveBreakpointUserAtAddress },
+    { _T("bcH%ho"), ARGINFO_OCT, &QConsoleView::cmdRemoveBreakpointHaltAtAddress },
     { _T("bc%ho"), ARGINFO_OCT, &QConsoleView::cmdRemoveBreakpointAtAddress },
     { _T("bc"), ARGINFO_NONE, &QConsoleView::cmdRemoveAllBreakpoints },
 //    { _T("fc%ho %ho"), ARGINFO_OCT_OCT, &QConsoleView::cmdCalculateFloatNumber },

@@ -80,15 +80,16 @@ void QDisasmView::mousePressEvent(QMouseEvent * event)
                 if (lineitem.type != LINETYPE_NONE)
                 {
                     quint16 address = lineitem.address;
-                    if (!Emulator_IsBreakpoint(address))
+                    bool okHaltMode = g_pBoard->GetCPU()->IsHaltMode();
+                    if (!Emulator_IsBreakpoint(address, okHaltMode))
                     {
-                        bool result = Emulator_AddCPUBreakpoint(address);
+                        bool result = Emulator_AddCPUBreakpoint(address, okHaltMode);
                         if (!result)
                             AlertWarning(tr("Failed to add breakpoint at %1.").arg(address, 6, 8, QLatin1Char('0')));
                     }
                     else
                     {
-                        bool result = Emulator_RemoveCPUBreakpoint(address);
+                        bool result = Emulator_RemoveCPUBreakpoint(address, okHaltMode);
                         if (!result)
                             AlertWarning(tr("Failed to remove breakpoint at %1.").arg(address, 6, 8, QLatin1Char('0')));
                     }
@@ -426,6 +427,7 @@ int QDisasmView::drawDisassemble(QPainter &painter, CProcessor *pProc, quint16 c
     QColor colorWindow = palette().color(QPalette::Window);
 
     quint16 proccurrent = pProc->GetPC();
+    bool prochalt = pProc->IsHaltMode();
 
     // Draw breakpoint zone
     painter.fillRect(0, 0, m_cxDisasmBreakpointZone, this->height(), colorWindow);
@@ -458,7 +460,7 @@ int QDisasmView::drawDisassemble(QPainter &painter, CProcessor *pProc, quint16 c
             continue;
         }
 
-        if (Emulator_IsBreakpoint(address))  // Breakpoint
+        if (Emulator_IsBreakpoint(address, prochalt))  // Breakpoint
         {
             drawBreakpoint(painter, 0, y, (cxChar + cyLine) / 2);
         }

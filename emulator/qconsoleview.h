@@ -68,8 +68,12 @@ public:
     void cmdPrintMemoryDumpAtPC(const ConsoleCommandParams& params);
     void cmdRunToAddress(const ConsoleCommandParams& params);
     void cmdRun(const ConsoleCommandParams& params);
+    void cmdSetBreakpointUserAtAddress(const ConsoleCommandParams& params);
+    void cmdSetBreakpointHaltAtAddress(const ConsoleCommandParams& params);
     void cmdSetBreakpointAtAddress(const ConsoleCommandParams& params);
     void cmdPrintAllBreakpoints(const ConsoleCommandParams& params);
+    void cmdRemoveBreakpointUserAtAddress(const ConsoleCommandParams& params);
+    void cmdRemoveBreakpointHaltAtAddress(const ConsoleCommandParams& params);
     void cmdRemoveBreakpointAtAddress(const ConsoleCommandParams& params);
     void cmdRemoveAllBreakpoints(const ConsoleCommandParams& params);
 };

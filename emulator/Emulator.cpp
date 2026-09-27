@@ -19,8 +19,8 @@ NeonConfiguration g_nEmulatorConfiguration;  // Current configuration
 bool g_okEmulatorRunning = false;
 
 int m_wEmulatorCPUBpsCount = 0;
-quint16 m_EmulatorCPUBps[MAX_BREAKPOINTCOUNT + 1];
-quint16 m_wEmulatorTempCPUBreakpoint = 0177777;
+quint32 m_EmulatorCPUBps[MAX_BREAKPOINTCOUNT + 1];
+quint32 m_wEmulatorTempCPUBreakpoint = 0177777;
 int m_wEmulatorWatchesCount = 0;
 uint16_t m_EmulatorWatches[MAX_BREAKPOINTCOUNT];
 
@@ -81,21 +81,21 @@ bool Emulator_Init()
     CProcessor::Init();
 
     m_wEmulatorCPUBpsCount = 0;
-    for (int i = 0; i <= MAX_BREAKPOINTCOUNT + 1; i++)
+    for (int i = 0; i <= MAX_BREAKPOINTCOUNT; i++)
     {
-        m_EmulatorCPUBps[i] = 0177777;
+        m_EmulatorCPUBps[i] = NOBREAKPOINT;
     }
     m_wEmulatorWatchesCount = 0;
-    for (int i = 0; i <= MAX_WATCHESCOUNT; i++)
+    for (int i = 0; i < MAX_WATCHESCOUNT; i++)
     {
         m_EmulatorWatches[i] = 0177777;
     }
 
-    g_pBoard = new CMotherboard();
-
     // Allocate memory for old RAM values
-    g_pEmulatorRam = static_cast<uint8_t*>(::calloc(65536, 1));
-    g_pEmulatorChangedRam = static_cast<uint8_t*>(::calloc(65536, 1));
+    g_pEmulatorRam = static_cast<uint8_t*>(::calloc(4096 * 1024, 1));
+    g_pEmulatorChangedRam = static_cast<uint8_t*>(::calloc(4096 * 1024, 1));
+
+    g_pBoard = new CMotherboard();
 
     g_pBoard->Reset();
 
@@ -173,7 +173,7 @@ void Emulator_Stop()
 {
     g_okEmulatorRunning = false;
 
-    Emulator_SetTempCPUBreakpoint(0177777);
+    Emulator_SetTempCPUBreakpoint(0177777, false);
 
     // Set title bar text
     Global_getMainWindow()->updateWindowText();
@@ -201,91 +201,105 @@ void Emulator_Reset()
     Global_UpdateAllViews();
 }
 
-bool Emulator_AddCPUBreakpoint(quint16 address)
+void Emulator_SetTimer64or50(bool value)
 {
-    if (m_wEmulatorCPUBpsCount == MAX_BREAKPOINTCOUNT - 1 || address == 0177777)
+    g_pBoard->SetTimer50or64(value);
+}
+
+bool Emulator_AddCPUBreakpoint(quint16 address, bool ishalt)
+{
+    if (m_wEmulatorCPUBpsCount == MAX_BREAKPOINTCOUNT - 1)
         return false;
+    quint32 bpvalue = ((quint32)address) | (ishalt ? BREAKPOINT_HALT : 0);
     for (int i = 0; i < m_wEmulatorCPUBpsCount; i++)  // Check if the BP exists
     {
-        if (m_EmulatorCPUBps[i] == address)
+        if (m_EmulatorCPUBps[i] == bpvalue)
             return false;  // Already in the list
     }
     for (int i = 0; i < MAX_BREAKPOINTCOUNT; i++)  // Put in the first empty cell
     {
-        if (m_EmulatorCPUBps[i] > address)  // found the place
+        if (m_EmulatorCPUBps[i] > bpvalue)  // found the place
         {
-            memcpy(m_EmulatorCPUBps + i + 1, m_EmulatorCPUBps + i, sizeof(uint16_t) * (m_wEmulatorCPUBpsCount - i));
-            m_EmulatorCPUBps[i] = address;
+            memcpy(m_EmulatorCPUBps + i + 1, m_EmulatorCPUBps + i, sizeof(quint32) * (m_wEmulatorCPUBpsCount - i));
+            m_EmulatorCPUBps[i] = bpvalue;
             break;
         }
-        if (m_EmulatorCPUBps[i] == 0177777)
+        if (m_EmulatorCPUBps[i] == NOBREAKPOINT)  // found empty place
         {
-            m_EmulatorCPUBps[i] = address;
+            m_EmulatorCPUBps[i] = bpvalue;
             break;
         }
     }
     m_wEmulatorCPUBpsCount++;
     return true;
 }
-bool Emulator_RemoveCPUBreakpoint(quint16 address)
+bool Emulator_RemoveCPUBreakpoint(quint16 address, bool ishalt)
 {
-    if (m_wEmulatorCPUBpsCount == 0 || address == 0177777)
+    quint32 bpvalue = ((quint32)address) | (ishalt ? BREAKPOINT_HALT : 0);
+    return Emulator_RemoveCPUBreakpoint(bpvalue);
+}
+bool Emulator_RemoveCPUBreakpoint(quint32 bpvalue)
+{
+    if (m_wEmulatorCPUBpsCount == 0)
         return false;
     for (int i = 0; i < MAX_BREAKPOINTCOUNT; i++)
     {
-        if (m_EmulatorCPUBps[i] == address)
+        if (m_EmulatorCPUBps[i] == bpvalue)
         {
-            m_EmulatorCPUBps[i] = 0177777;
+            m_EmulatorCPUBps[i] = NOBREAKPOINT;
             m_wEmulatorCPUBpsCount--;
             if (m_wEmulatorCPUBpsCount > i)  // fill the hole
             {
-                memcpy(m_EmulatorCPUBps + i, m_EmulatorCPUBps + i + 1, sizeof(uint16_t) * (m_wEmulatorCPUBpsCount - i));
-                m_EmulatorCPUBps[m_wEmulatorCPUBpsCount] = 0177777;
+                memcpy(m_EmulatorCPUBps + i, m_EmulatorCPUBps + i + 1, sizeof(quint32) * (m_wEmulatorCPUBpsCount - i));
+                m_EmulatorCPUBps[m_wEmulatorCPUBpsCount] = NOBREAKPOINT;
             }
             return true;
         }
     }
     return false;
 }
-void Emulator_SetTempCPUBreakpoint(quint16 address)
+void Emulator_SetTempCPUBreakpoint(quint16 address, bool ishalt)
 {
-    if (m_wEmulatorTempCPUBreakpoint != 0177777)
+    if (m_wEmulatorTempCPUBreakpoint != NOBREAKPOINT)
         Emulator_RemoveCPUBreakpoint(m_wEmulatorTempCPUBreakpoint);
     if (address == 0177777)
     {
-        m_wEmulatorTempCPUBreakpoint = 0177777;
+        m_wEmulatorTempCPUBreakpoint = NOBREAKPOINT;
         return;
     }
+    quint32 bpvalue = ((quint32)address) | (ishalt ? BREAKPOINT_HALT : 0);
     for (int i = 0; i < MAX_BREAKPOINTCOUNT; i++)
     {
-        if (m_EmulatorCPUBps[i] == address)
+        if (m_EmulatorCPUBps[i] == bpvalue)
             return;  // We have regular breakpoint with the same address
     }
-    m_wEmulatorTempCPUBreakpoint = address;
-    m_EmulatorCPUBps[m_wEmulatorCPUBpsCount] = address;
+    m_wEmulatorTempCPUBreakpoint = bpvalue;
+    m_EmulatorCPUBps[m_wEmulatorCPUBpsCount] = bpvalue;
     m_wEmulatorCPUBpsCount++;
 }
-const quint16* Emulator_GetCPUBreakpointList() { return m_EmulatorCPUBps; }
+const quint32* Emulator_GetCPUBreakpointList() { return m_EmulatorCPUBps; }
 bool Emulator_IsBreakpoint()
 {
     quint16 address = g_pBoard->GetCPU()->GetPC();
+    quint32 bpvalue = ((quint32)address) | (g_pBoard->GetCPU()->IsHaltMode() ? BREAKPOINT_HALT : 0);
     if (m_wEmulatorCPUBpsCount > 0)
     {
         for (int i = 0; i < m_wEmulatorCPUBpsCount; i++)
         {
-            if (address == m_EmulatorCPUBps[i])
+            if (bpvalue == m_EmulatorCPUBps[i])
                 return true;
         }
     }
     return false;
 }
-bool Emulator_IsBreakpoint(quint16 address)
+bool Emulator_IsBreakpoint(quint16 address, bool ishalt)
 {
     if (m_wEmulatorCPUBpsCount == 0)
         return false;
+    quint32 bpvalue = ((quint32)address) | (ishalt ? BREAKPOINT_HALT : 0);
     for (int i = 0; i < m_wEmulatorCPUBpsCount; i++)
     {
-        if (address == m_EmulatorCPUBps[i])
+        if (bpvalue == m_EmulatorCPUBps[i])
             return true;
     }
     return false;
@@ -293,7 +307,7 @@ bool Emulator_IsBreakpoint(quint16 address)
 void Emulator_RemoveAllBreakpoints()
 {
     for (int i = 0; i < MAX_BREAKPOINTCOUNT; i++)
-        m_EmulatorCPUBps[i] = 0177777;
+        m_EmulatorCPUBps[i] = NOBREAKPOINT;
     m_wEmulatorCPUBpsCount = 0;
 }
 
@@ -372,7 +386,7 @@ bool Emulator_SystemFrame()
 
     if (!g_pBoard->SystemFrame())  // Breakpoint hit
     {
-        Emulator_SetTempCPUBreakpoint(0177777);
+        Emulator_SetTempCPUBreakpoint(0177777, false);
         return false;
     }
 

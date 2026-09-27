@@ -1,11 +1,11 @@
 ﻿/*  This file is part of NEONBTL.
-NEONBTL is free software: you can redistribute it and/or modify it under the terms
+    NEONBTL is free software: you can redistribute it and/or modify it under the terms
 of the GNU Lesser General Public License as published by the Free Software Foundation,
 either version 3 of the License, or (at your option) any later version.
-NEONBTL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+    NEONBTL is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU Lesser General Public License for more details.
-You should have received a copy of the GNU Lesser General Public License along with
+    You should have received a copy of the GNU Lesser General Public License along with
 NEONBTL. If not, see <http://www.gnu.org/licenses/>. */
 
 // Board.cpp
@@ -17,13 +17,10 @@ NEONBTL. If not, see <http://www.gnu.org/licenses/>. */
 
 //////////////////////////////////////////////////////////////////////
 
-PIT8253_chan::PIT8253_chan()
+PIT8253_chan::PIT8253_chan() :
+    control(0), phase(0), value(0), count(0), latchvalue(0), gate(true), gateprev(true),
+    writehi(false), readhi(false), output(false)
 {
-    control = phase = 0;
-    value = count = latchvalue = 0;
-    gate = true;
-    writehi = readhi = false;
-    output = false;
 }
 
 PIT8253::PIT8253() : m_chan()
@@ -107,25 +104,6 @@ uint8_t PIT8253::Read(uint8_t address)
     }
 }
 
-void PIT8253::SetGate(uint8_t chan, bool gate)
-{
-    if (chan >= 3) return;
-    m_chan[chan].gate = gate;
-}
-
-bool PIT8253::GetOutput(uint8_t chan) const
-{
-    if (chan >= 3) return false;
-
-    return m_chan[chan].output;
-}
-
-void PIT8253::Tick()
-{
-    Tick(0);
-    Tick(1);
-    Tick(2);
-}
 void PIT8253::Tick(uint8_t channel)
 {
     PIT8253_chan& chan = m_chan[channel];
@@ -140,7 +118,7 @@ void PIT8253::Tick(uint8_t channel)
             1|low     |1       |     |2   |internal delay when counter loaded
             2|low     |n       |n..1 |3   |counting down
             3|high    |infinity|0..1 |3   |counting down
-         */
+        */
         if (chan.phase != 0)
         {
             if (chan.phase == 1)
@@ -165,8 +143,42 @@ void PIT8253::Tick(uint8_t channel)
             }
         }
         break;
-    case 1:
-        //TODO
+    case 1:  // Hardware Retriggerable One-Shot AKA Programmable One-Shot
+        /*
+        phase|output  |length  |value|next|comment
+        -----+--------+--------+-----+----+----------------------------------
+            0|high    |infinity|     |1   |counting down
+            1|high    |1       |     |2   |internal delay to load counter
+            2|low     |n       |n..1 |3   |counting down
+            3|high    |infinity|0..1 |3   |counting down
+        */
+        if (chan.phase == 0)  // Counting down
+        {
+            if (!chan.gateprev && chan.gate)  // gate rising-edge sensitive
+                chan.phase = 1;
+            chan.value--;
+            return;
+        }
+        if (chan.phase == 1)  // counter load cycle, output goes low
+        {
+            chan.value = chan.count;
+            chan.output = false;
+            chan.phase = 2;
+            chan.value--;
+            return;
+        }
+        if (chan.phase == 2)  // counting down
+        {
+            if (chan.value == 0)  // counter wrapped, output goes high
+            {
+                chan.output = true;
+                chan.phase = 3;
+            }
+            chan.value--;
+            return;
+        }
+        // chan.phase == 3
+        chan.value--;
         break;
     case 2:  // Rate Generator
         /*
@@ -177,9 +189,16 @@ void PIT8253::Tick(uint8_t channel)
             2|high    |n       |n..2 |3   |counting down
             3|low     |1       |1    |2   |reload counter
         */
-        if (!chan.gate || chan.phase == 0)
+        if (!chan.gate)  // gate low or mode control write forces output high
         {
             chan.output = true;
+            return;
+        }
+        if (chan.phase == 0)
+        {
+            chan.output = true;
+            if (!chan.gateprev && chan.gate)  // gate rising reloads count and initiates counting
+                chan.phase = 1;
             return;
         }
         if (chan.phase == 1)
@@ -227,11 +246,45 @@ void PIT8253::Tick(uint8_t channel)
             chan.value = chan.count;
         chan.output = (chan.value > chan.count / 2);
         break;
-    case 4:
-        //TODO
-        break;
-    case 5:
-        //TODO
+    case 4:  // Software Trigger Strobe
+    case 5:  // Hardware Trigger Strobe
+        /*
+        phase|output  |length  |value|next|comment
+        -----+--------+--------+-----+----+----------------------------------
+            0|high    |infinity|0..1 |0   |waiting for count/counting down
+            1|high    |1       |     |2   |internal delay when counter loaded
+            2|high    |n       |n..1 |3   |counting down
+            3|low     |1       |0    |0   |strobe
+        */
+        if (chan.gate == 0 && mode == 4)  // gate low in mode 4 disables counting
+            return;
+        if (chan.phase == 0)
+        {
+            if (!chan.gateprev && chan.gate)  // gate rising reloads count and initiates counting
+                chan.phase = 1;
+            return;
+        }
+        if (chan.phase == 1)
+        {
+            chan.phase = 2;
+            chan.value = chan.count;
+            return;
+        }
+        if (chan.phase == 2)
+        {
+            if (chan.value > 0)
+                chan.value--;
+            else  // counter has hit zero, set output to low
+            {
+                chan.output = false;
+                chan.phase = 3;
+            }
+            return;
+        }
+        // chan.phase == 3
+        chan.phase = 0;
+        chan.value--;
+        chan.output = true;
         break;
     }
 }

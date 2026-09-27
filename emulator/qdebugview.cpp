@@ -513,14 +513,18 @@ void QDebugBreakpointsCtrl::paintEvent(QPaintEvent * /*event*/)
 
     painter.drawText(x, y, tr("Breakpts"));
 
-    const quint16* pbps = Emulator_GetCPUBreakpointList();
-    if (*pbps == 0177777)
+    const quint32* pbps = Emulator_GetCPUBreakpointList();
+    if (*pbps == NOBREAKPOINT)
         return;
 
     y += cyLine;
-    while (*pbps != 0177777)
+    while (*pbps != NOBREAKPOINT)
     {
-        DrawOctalValue(painter, x + cxChar, y, *pbps);
+        quint32 bpvalue = *pbps;
+        quint16 address = bpvalue & 0xffff;
+        QChar huch = (bpvalue & BREAKPOINT_HALT) != 0 ? QLatin1Char('H') : QLatin1Char('U');
+        painter.drawText(x, y, QString(huch));
+        DrawOctalValue(painter, x + cxChar, y, address);
         y += cyLine;
         pbps++;
     }
