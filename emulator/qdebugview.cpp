@@ -42,7 +42,7 @@ QDebugView::QDebugView(QWidget *mainWindow) :
     m_stackCtrl = new QDebugStackCtrl(this);
     m_stackCtrl->setGeometry(x, 0, cxStack, cyHeight);
     x += cxStack + 4;
-    int cxPorts = cxChar * 25;
+    int cxPorts = cxChar * 22;
     m_portsCtrl = new QDebugPortsCtrl(this);
     m_portsCtrl->setGeometry(x, 0, cxPorts, cyHeight);
     x += cxPorts + 4;
@@ -262,6 +262,13 @@ void QDebugProcessorCtrl::paintEvent(QPaintEvent * /*event*/)
     bool okStopped = pProc->IsStopped();
     if (okStopped)
         painter.drawText(x + 6 * cxChar, y + 14 * cyLine, "STOP");
+
+    // PSW flags as TNZVC string: flag letter if bit is set, '-' otherwise
+    const char* tnzvc = "TNZVC";
+    QString flagstr;
+    for (int j = 0; j < 5; j++)
+        flagstr += (psw & (1 << (4 - j))) ? QChar(tnzvc[j]) : QChar('-');
+    painter.drawText(x + cxChar * 26, y + 14 * cyLine, flagstr);
 }
 
 void QDebugProcessorCtrl::updateData()
@@ -466,6 +473,23 @@ QDebugPortsCtrl::QDebugPortsCtrl(QDebugView *debugView)
 {
 }
 
+struct DebugViewPortWatch
+{
+    quint16 address;
+    const char* description;
+};
+static const DebugViewPortWatch DebugViewPorts[] =
+{
+    //{ 0161030, "PPIA" },
+    { 0161032, "PPIB" },
+    { 0161034, "PPIC" },
+    { 0161000, "PICRR" },
+    { 0161002, "PICMR" },
+    { 0161200, "HR0" },
+    { 0161202, "HR1" },
+    { 0161070, "FD.CSR" },
+};
+
 void QDebugPortsCtrl::paintEvent(QPaintEvent * /*event*/)
 {
     QColor colorBackground = palette().color(QPalette::Base);
@@ -482,13 +506,18 @@ void QDebugPortsCtrl::paintEvent(QPaintEvent * /*event*/)
 
     painter.drawText(x, y, tr("Ports"));
 
-    quint16 value176640 = g_pBoard->GetPortView(0176640);
-    DrawOctalValue(painter, x + 0 * cxChar, y + 1 * cyLine, 0176640);
-    DrawOctalValue(painter, x + 7 * cxChar, y + 1 * cyLine, value176640);
-    quint16 value176642 = g_pBoard->GetPortView(0176642);
-    DrawOctalValue(painter, x + 0 * cxChar, y + 2 * cyLine, 0176642);
-    DrawOctalValue(painter, x + 7 * cxChar, y + 2 * cyLine, value176642);
+    const int portsCount = sizeof(DebugViewPorts) / sizeof(DebugViewPorts[0]);
+    for (int i = 0; i < portsCount; i++)
+    {
+        y += cyLine;
+        const DebugViewPortWatch& watch = DebugViewPorts[i];
+        quint16 value = g_pBoard->GetPortView(watch.address);
+        DrawOctalValue(painter, x + 0 * cxChar, y, watch.address);
+        DrawOctalValue(painter, x + 7 * cxChar, y, value);
+        painter.drawText(x + 14 * cxChar, y, watch.description);
+    }
 }
+
 
 //////////////////////////////////////////////////////////////////////
 
