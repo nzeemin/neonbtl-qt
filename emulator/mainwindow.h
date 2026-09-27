@@ -72,6 +72,7 @@ public slots:
     void viewViewMode3();
     void viewViewMode4();
     void viewViewMode5();
+    void viewViewMode6();
     void confRam512();
     void confRam1024();
     void confRam2048();
