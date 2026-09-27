@@ -171,6 +171,7 @@ void MainWindow::closeEvent(QCloseEvent *)
     Global_getSettings()->setValue("MainWindow/Geometry", saveGeometry());
     Global_getSettings()->setValue("MainWindow/WindowState", saveState());
 
+    Global_getSettings()->setValue("MainWindow/KeyboardView", m_keyboard->isVisible());
     Global_getSettings()->setValue("MainWindow/ConsoleView", m_dockConsole->isVisible());
     Global_getSettings()->setValue("MainWindow/DebugView", m_dockDebug->isVisible());
     Global_getSettings()->setValue("MainWindow/DisasmView", m_dockDisasm->isVisible());
@@ -194,6 +195,7 @@ void MainWindow::restoreSettings()
         setGeometry(QApplication::desktop()->availableGeometry(this));
     restoreState(Global_getSettings()->value("MainWindow/WindowState").toByteArray());
 
+    m_keyboard->setVisible(Global_getSettings()->value("MainWindow/KeyboardView", true).toBool());
     m_dockConsole->setVisible(Global_getSettings()->value("MainWindow/ConsoleView", false).toBool());
     m_dockDebug->setVisible(Global_getSettings()->value("MainWindow/DebugView", false).toBool());
     m_dockDisasm->setVisible(Global_getSettings()->value("MainWindow/DisasmView", false).toBool());
@@ -614,6 +616,11 @@ void MainWindow::detachHardDrive()
 {
     g_pBoard->DetachHardImage();
     Settings_SetHardFilePath(nullptr);
+}
+
+bool MainWindow::isDebugMode()
+{
+    return m_dockConsole->isVisible();
 }
 
 void MainWindow::debugConsoleView()

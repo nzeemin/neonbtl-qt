@@ -37,8 +37,10 @@ const char CommandLineHelp[] =
     OPTIONSTR "noautostart " OPTIONSTR "autostartoff    Do not start emulation on window open\n"
     OPTIONSTR "sound " OPTIONSTR "soundon    Turn sound on\n"
     OPTIONSTR "nosound " OPTIONSTR "soundoff    Turn sound off\n"
+    OPTIONSTR "debug " OPTIONSTR "debugon    Show Debug views on window open\n"
+    OPTIONSTR "nodebug " OPTIONSTR "debugoff    Hide Debug views on window open\n"
     OPTIONSTR "diskN:filePath    Attach disk image, N=0..3\n"
-    OPTIONSTR "hardN:filePath    Attach hard disk image, N=1..2\n";
+    OPTIONSTR "hard:filePath    Attach hard disk image\n";
 
 
 int main(int argc, char *argv[])
@@ -82,6 +84,15 @@ int main(int argc, char *argv[])
     RestoreSettings();
     w.updateMenu();
     w.updateAllViews();
+
+    if (Option_Debug >= 0)
+    {
+        if ((w.isDebugMode() && Option_Debug == 0) ||
+            (!w.isDebugMode() && Option_Debug > 0))
+        {
+            w.debugConsoleView();  // switch Debug mode on/off
+        }
+    }
 
     if (Option_ShowHelp)
     {
@@ -154,6 +165,14 @@ void RestoreSettings()
                 Settings_SetFloppyFilePath(slot, nullptr);
         }
     }
+
+    // Reattach hard disk image
+    QString hardPath = Settings_GetHardFilePath();
+    if (hardPath.length() > 0)
+    {
+        if (! g_pBoard->AttachHardImage(qPrintable(hardPath)))
+            Settings_SetHardFilePath(nullptr);
+    }
 }
 
 void ParseCommandLine(int argc, char *argv[])
@@ -186,17 +205,28 @@ void ParseCommandLine(int argc, char *argv[])
             {
                 Settings_SetSound(false);
             }
+            else if (option == "debug" || option == "debugon")
+            {
+                Option_Debug = 1;
+            }
+            else if (option == "debugoff" || option == "nodebug")
+            {
+                Option_Debug = 0;
+            }
             else if (option.startsWith("disk") && option.length() > 6 && // "/diskN:filePath", N=0..3
                     option[4] >= '0' && option[4] <= '3' && option[5] == ':')
             {
                 int slot = option[4].toLatin1() - '0';
                 Settings_SetFloppyFilePath(slot, option.mid(6));
             }
-            else if (option.startsWith("hard:") && option.length() > 5) // "/hard:filePath", N=1..2
+            else if (option.startsWith("hard:") && option.length() > 5) // "/hard:filePath"
             {
                 Settings_SetHardFilePath(option.mid(5));
             }
-            //TODO
+            else
+            {
+                AlertWarning(QString("Unknown command line option:\n%1").arg(QString::fromLocal8Bit(param)));
+            }
         }
 
         ++it;

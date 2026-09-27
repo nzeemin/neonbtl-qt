@@ -49,6 +49,7 @@ quint16 Settings_GetDebugMemoryNumeral();
 // Options
 
 extern bool Option_ShowHelp;
+extern int Option_Debug;
 
 
 //////////////////////////////////////////////////////////////////////
