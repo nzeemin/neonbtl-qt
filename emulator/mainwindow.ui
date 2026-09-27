@@ -92,6 +92,7 @@
     <addaction name="actionViewMode2"/>
     <addaction name="actionViewMode3"/>
     <addaction name="actionViewMode4"/>
+    <addaction name="actionViewMode5"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -332,6 +333,14 @@
    </property>
    <property name="text">
     <string>1248 x 900</string>
+   </property>
+  </action>
+  <action name="actionViewMode5">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>1664 x 1200</string>
    </property>
   </action>
   <action name="actionSaveStateImage">

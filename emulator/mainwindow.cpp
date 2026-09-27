@@ -57,6 +57,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->actionViewMode2, SIGNAL(triggered()), this, SLOT(viewViewMode2()));
     QObject::connect(ui->actionViewMode3, SIGNAL(triggered()), this, SLOT(viewViewMode3()));
     QObject::connect(ui->actionViewMode4, SIGNAL(triggered()), this, SLOT(viewViewMode4()));
+    QObject::connect(ui->actionViewMode5, SIGNAL(triggered()), this, SLOT(viewViewMode5()));
     QObject::connect(ui->actionConfRam512, SIGNAL(triggered()), this, SLOT(confRam512()));
     QObject::connect(ui->actionConfRam1024, SIGNAL(triggered()), this, SLOT(confRam1024()));
     QObject::connect(ui->actionConfRam2048, SIGNAL(triggered()), this, SLOT(confRam2048()));
@@ -213,6 +214,7 @@ void MainWindow::updateMenu()
     ui->actionViewMode2->setChecked(m_screen->mode() == 2);
     ui->actionViewMode3->setChecked(m_screen->mode() == 3);
     ui->actionViewMode4->setChecked(m_screen->mode() == 4);
+    ui->actionViewMode5->setChecked(m_screen->mode() == 5);
 
     ui->actionViewKeyboard->setChecked(m_keyboard->isVisible());
 
@@ -426,6 +428,15 @@ void MainWindow::viewViewMode3()
 void MainWindow::viewViewMode4()
 {
     m_screen->setMode(4);
+    updateMenu();
+
+    //Update centralWidget size
+    ui->centralWidget->setMaximumHeight(m_screen->maximumHeight() + m_keyboard->maximumHeight());
+    ui->centralWidget->setMaximumWidth(m_screen->maximumWidth());
+}
+void MainWindow::viewViewMode5()
+{
+    m_screen->setMode(5);
     updateMenu();
 
     //Update centralWidget size
