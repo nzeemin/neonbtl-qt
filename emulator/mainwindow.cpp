@@ -62,6 +62,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->actionConfRam512, SIGNAL(triggered()), this, SLOT(confRam512()));
     QObject::connect(ui->actionConfRam1024, SIGNAL(triggered()), this, SLOT(confRam1024()));
     QObject::connect(ui->actionConfRam2048, SIGNAL(triggered()), this, SLOT(confRam2048()));
+    QObject::connect(ui->actionConfRam512N2048, SIGNAL(triggered()), this, SLOT(confRam512N2048()));
+    QObject::connect(ui->actionConfRam2048N512, SIGNAL(triggered()), this, SLOT(confRam2048N512()));
     QObject::connect(ui->actionConfRam4096, SIGNAL(triggered()), this, SLOT(confRam4096()));
     QObject::connect(ui->actionSoundEnabled, SIGNAL(triggered()), this, SLOT(soundEnabled()));
 
@@ -223,10 +225,17 @@ void MainWindow::updateMenu()
     ui->actionViewKeyboard->setChecked(m_keyboard->isVisible());
 
     int conf = Settings_GetConfiguration();
-    ui->actionConfRam512->setChecked((conf & NEON_COPT_RAMSIZE_MASK) <= 512);
-    ui->actionConfRam1024->setChecked((conf & NEON_COPT_RAMSIZE_MASK) == 1024);
-    ui->actionConfRam2048->setChecked((conf & NEON_COPT_RAMSIZE_MASK) == 2048);
-    ui->actionConfRam4096->setChecked((conf & NEON_COPT_RAMSIZE_MASK) == 4096);
+    int ramsize = conf & NEON_COPT_RAMSIZE_MASK;
+    bool okCombined512N2048 = ramsize == 2560 && ((conf >> 4) & 3) == 1;
+    bool okCombined2048N512 = ramsize == 2560 && ((conf >> 4) & 3) == 2;
+    bool okKnownRamsize = ramsize == 512 || ramsize == 1024 || ramsize == 2048 || ramsize == 4096 ||
+            okCombined512N2048 || okCombined2048N512;
+    ui->actionConfRam512->setChecked(!okKnownRamsize || ramsize == 512);
+    ui->actionConfRam1024->setChecked(ramsize == 1024);
+    ui->actionConfRam2048->setChecked(ramsize == 2048);
+    ui->actionConfRam4096->setChecked(ramsize == 4096);
+    ui->actionConfRam512N2048->setChecked(okCombined512N2048);
+    ui->actionConfRam2048N512->setChecked(okCombined2048N512);
 
     ui->actionDrivesFloppy0->setIcon(QIcon(
             g_pBoard->IsFloppyImageAttached(0) ? ":/images/iconFloppy.svg" : ":/images/iconFloppySlot.svg" ));
@@ -281,10 +290,9 @@ void MainWindow::redrawDisasmView()
 
 void MainWindow::updateWindowText()
 {
-    if (g_okEmulatorRunning)
-        this->setWindowTitle(tr("NEON Back to Life [run]"));
-    else
-        this->setWindowTitle(tr("NEON Back to Life [stop]"));
+    int memsize = g_pBoard->GetConfiguration() & NEON_COPT_RAMSIZE_MASK;
+    QString state = g_okEmulatorRunning ? tr("run") : tr("stop");
+    this->setWindowTitle(tr("NEON Back to Life - %1 KB - [%2]").arg(memsize).arg(state));
 }
 
 void MainWindow::showUptime(int uptimeMillisec)
@@ -457,21 +465,35 @@ void MainWindow::viewViewMode6()
     ui->centralWidget->setMaximumWidth(m_screen->maximumWidth());
 }
 
+void MainWindow::doConfRam(quint32 memsize, quint32 bankbits)
+{
+    int conf = (Settings_GetConfiguration() & ~(NEON_COPT_RAMSIZE_MASK | NEON_COPT_RAMBANK0_MASK | NEON_COPT_RAMBANK1_MASK))
+            | memsize | bankbits;
+    changeConfiguration(conf);
+}
 void MainWindow::confRam512()
 {
-    changeConfiguration((Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK) | 512);
+    doConfRam(512, 1 << 4);  // 2 x 256K = 512K
 }
 void MainWindow::confRam1024()
 {
-    changeConfiguration((Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK) | 1024);
+    doConfRam(1024, (1 << 4) | (1 << 6));  // 2 x 256K + 2 x 256K = 1024K
 }
 void MainWindow::confRam2048()
 {
-    changeConfiguration((Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK) | 2048);
+    doConfRam(2048, 2 << 4);  // 2 x 1024K = 2048K
+}
+void MainWindow::confRam512N2048()
+{
+    doConfRam(512 + 2048, (1 << 4) | (2 << 6));  // 2 x 256K + 2 x 1024K
+}
+void MainWindow::confRam2048N512()
+{
+    doConfRam(2048 + 512, (2 << 4) | (1 << 6));  // 2 x 1024K + 2 x 256K
 }
 void MainWindow::confRam4096()
 {
-    changeConfiguration((Settings_GetConfiguration() & ~NEON_COPT_RAMSIZE_MASK) | 4096);
+    doConfRam(4096, (2 << 4) | (2 << 6));  // 2 x 1024K + 2 x 1024K = 4096K
 }
 
 void MainWindow::changeConfiguration(int configuration)
@@ -490,6 +512,7 @@ void MainWindow::changeConfiguration(int configuration)
     Settings_SetConfiguration(configuration);
 
     updateMenu();
+    updateWindowText();
     updateAllViews();
 }
 

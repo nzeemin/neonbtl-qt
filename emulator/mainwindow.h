@@ -76,6 +76,8 @@ public slots:
     void confRam512();
     void confRam1024();
     void confRam2048();
+    void confRam512N2048();
+    void confRam2048N512();
     void confRam4096();
     void soundEnabled();
 
@@ -104,6 +106,7 @@ private:
     QLabel* m_statusLabelUptime;
 
     void changeConfiguration(int configuration);
+    void doConfRam(quint32 memsize, quint32 bankbits);
     void emulatorFloppy(int slot);
 };
 

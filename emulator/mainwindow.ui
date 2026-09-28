@@ -49,6 +49,8 @@
     <addaction name="actionConfRam512"/>
     <addaction name="actionConfRam1024"/>
     <addaction name="actionConfRam2048"/>
+    <addaction name="actionConfRam512N2048"/>
+    <addaction name="actionConfRam2048N512"/>
     <addaction name="actionConfRam4096"/>
    </widget>
    <widget class="QMenu" name="menuDrives">
@@ -431,6 +433,22 @@
    </property>
    <property name="text">
     <string>RAM 2048 KB</string>
+   </property>
+  </action>
+  <action name="actionConfRam512N2048">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>RAM 512+2048 KB</string>
+   </property>
+  </action>
+  <action name="actionConfRam2048N512">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>RAM 2048+512 KB</string>
    </property>
   </action>
   <action name="actionConfRam4096">

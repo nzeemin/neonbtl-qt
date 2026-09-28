@@ -83,6 +83,7 @@ int main(int argc, char *argv[])
 
     RestoreSettings();
     w.updateMenu();
+    w.updateWindowText();
     w.updateAllViews();
 
     if (Option_Debug >= 0)
