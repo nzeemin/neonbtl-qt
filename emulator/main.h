@@ -5,6 +5,8 @@
 
 #include <QtGlobal>
 
+#define FRAMERATE 50  // Frames per second
+
 class QApplication;
 class MainWindow;
 class QString;

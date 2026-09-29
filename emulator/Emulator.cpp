@@ -403,9 +403,9 @@ bool Emulator_SystemFrame()
         m_nTickCount = nCurrentTicks;
     }
 
-    // Calculate emulator uptime (25 frames per second)
+    // Calculate emulator uptime (FRAMERATE frames per second)
     m_nUptimeFrameCount++;
-    if (m_nUptimeFrameCount >= 25)
+    if (m_nUptimeFrameCount >= FRAMERATE)
     {
         m_dwEmulatorUptime++;
         m_nUptimeFrameCount = 0;
@@ -427,7 +427,7 @@ void CALLBACK Emulator_FeedDAC(unsigned short l, unsigned short r)
 
 float Emulator_GetUptime()
 {
-    return (float)m_dwEmulatorUptime + float(m_nUptimeFrameCount) / 25.0f;
+    return (float)m_dwEmulatorUptime + float(m_nUptimeFrameCount) / (float)FRAMERATE;
 }
 
 // Update cached values after Run or Step
