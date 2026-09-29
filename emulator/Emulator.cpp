@@ -6,7 +6,7 @@
 #include "Emulator.h"
 #include "emubase/Emubase.h"
 #include "qsoundout.h"
-#include <QTime>
+#include <QElapsedTimer>
 #include <QFile>
 
 
@@ -30,7 +30,7 @@ bool m_okEmulatorSerial = false;
 FILE* m_fpEmulatorSerialOut = nullptr;
 
 static long m_nFrameCount = 0;
-static QTime m_emulatorTime;
+static QElapsedTimer m_emulatorTime;
 static int m_nTickCount = 0;
 static quint32 m_dwEmulatorUptime = 0;  // Device uptime, seconds, from turn on or reset, increments every 25 frames
 static long m_nUptimeFrameCount = 0;
@@ -491,7 +491,7 @@ static ScreenModeReference[] =
 
 void Emulator_GetScreenSize(int scrmode, int* pwid, int* phei)
 {
-    if (scrmode < 0 || scrmode >= sizeof(ScreenModeReference) / sizeof(ScreenModeStruct))
+    if (scrmode < 0 || scrmode >= (int)(sizeof(ScreenModeReference) / sizeof(ScreenModeStruct)))
         return;
     ScreenModeStruct* pinfo = ScreenModeReference + scrmode;
     *pwid = pinfo->width;

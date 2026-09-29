@@ -439,11 +439,12 @@ void QMemoryView::keyPressEvent(QKeyEvent *event)
 
 void QMemoryView::wheelEvent(QWheelEvent * event)
 {
-    if (event->orientation() == Qt::Horizontal)
+    QPoint angleDelta = event->angleDelta();
+    if (qAbs(angleDelta.x()) > qAbs(angleDelta.y()))
         return;
     event->accept();
 
-    int steps = -event->delta() / 60;
+    int steps = -angleDelta.y() / 60;
     scrollBy(steps * 16);
 }
 

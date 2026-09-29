@@ -462,7 +462,7 @@ void QConsoleView::cmdPrintAllBreakpoints(const ConsoleCommandParams &)
         quint32 bpvalue = *pbps;
         quint16 address = bpvalue & 0xffff;
         QChar huch = (bpvalue & BREAKPOINT_HALT) != 0 ? QLatin1Char('H') : QLatin1Char('U');
-        QString line;  line.sprintf("  %c%06ho\r\n", huch.toLatin1(), address);
+        QString line = QString::asprintf("  %c%06ho\r\n", huch.toLatin1(), address);
         this->print(line);
         pbps++;
     }
