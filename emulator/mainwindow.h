@@ -8,6 +8,7 @@ class QKeyboardView;
 class QConsoleView;
 class QDebugView;
 class QDisasmView;
+class QInstrHistoryView;
 class QMemoryView;
 class QLabel;
 
@@ -60,6 +61,7 @@ public slots:
     void emulatorHardDrive();
     void debugConsoleView();
     void debugDisasmView();
+    void debugInstrHistoryView();
     void debugMemoryView();
     void debugStepInto();
     void debugStepOver();
@@ -98,6 +100,8 @@ private:
     QDockWidget* m_dockDebug;
     QDisasmView *m_disasm;
     QDockWidget* m_dockDisasm;
+    QInstrHistoryView *m_instrHistory;
+    QDockWidget* m_dockInstrHistory;
     QMemoryView * m_memory;
     QDockWidget* m_dockMemory;
 

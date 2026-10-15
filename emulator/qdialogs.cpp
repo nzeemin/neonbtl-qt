@@ -100,7 +100,7 @@ QAboutDialog::QAboutDialog(QWidget * parent)
 //    logoLabel->setPixmap(QPixmap(":/images/neonbtl.png"));
 
     QLabel * versionLabel = new QLabel(tr(
-            "NEONBTL Qt Version 1.0\nCopyright (C) 2022-2024\n"));
+            "NEONBTL Qt Version 1.0\nCopyright (C) 2022-2026\n"));
 
     QLabel * authorsLabel = new QLabel(tr(
             "Author:\r\nNikita Zimin\n\n"

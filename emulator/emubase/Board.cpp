@@ -16,7 +16,6 @@ NEONBTL. If not, see <http://www.gnu.org/licenses/>. */
 #include "Board.h"
 #include <ctime>
 
-void TraceInstruction(const CProcessor* pProc, const CMotherboard* pBoard, uint16_t address);
 
 
 // Macro to printf current instruction address along with H/U flag
@@ -65,6 +64,8 @@ CMotherboard::CMotherboard()
     m_mousest = m_mousedx = m_mousedy = 0;
 
     m_rtcticks = 0;
+    m_SoundChanges = 0;
+    m_SoundPrevValue = 0;
 
     SetConfiguration(0);  // Default configuration
 
@@ -139,6 +140,11 @@ void CMotherboard::SetTrace(uint32_t dwTrace)
 {
     m_dwTrace = dwTrace;
     m_pFloppyCtl->SetTrace((dwTrace & TRACE_FLOPPY) != 0);
+}
+
+void CMotherboard::SetInstructionCallback(INSTRUCTIONCALLBACK callback)
+{
+    m_pCPU->SetInstructionCallback(callback);
 }
 
 void CMotherboard::Reset()
@@ -477,11 +483,6 @@ void CMotherboard::DebugTicks()
 {
     m_pCPU->ClearInternalTick();
 
-#if !defined(PRODUCT)
-    if (m_dwTrace & TRACE_CPU)
-        TraceInstruction(m_pCPU, this, m_pCPU->GetPC() & ~1);
-#endif
-
     m_pCPU->Execute();
 
     UpdateInterrupts();
@@ -502,6 +503,7 @@ void CMotherboard::DebugTicks()
 bool CMotherboard::SystemFrame()
 {
     const int soundSamplesPerFrame = SOUNDSAMPLERATE / 50;
+    m_SoundChanges = 0;
     int soundBrasErr = 0;
     int snl0 = 0, snl1 = 0, snl2 = 0, soundTicks = 0, snd0 = 0, snd1 = 0, snd2 = 0;
 
@@ -509,11 +511,6 @@ bool CMotherboard::SystemFrame()
     {
         for (int procticks = 0; procticks < 8; procticks++)  // CPU ticks
         {
-#if !defined(PRODUCT)
-            if ((m_dwTrace & TRACE_CPU) != 0 && m_pCPU->GetInternalTick() == 0)
-                TraceInstruction(m_pCPU, this, m_pCPU->GetPC() & ~1);
-#endif
-
             m_pCPU->Execute();
 
             UpdateInterrupts();
@@ -1684,10 +1681,14 @@ void CMotherboard::LoadFromImage(const uint8_t* pImage)
 
 void CMotherboard::DoSound(uint16_t s0, uint16_t s1, uint16_t s2)
 {
+    uint16_t sound = (uint16_t)(((uint32_t)s0 + (uint32_t)s1 + (uint32_t)s2) / 3);
+
+    if (sound != m_SoundPrevValue)
+        m_SoundChanges++;
+    m_SoundPrevValue = sound;
+
     if (m_SoundGenCallback == nullptr)
         return;
-
-    uint16_t sound = (uint16_t)(((uint32_t)s0 + (uint32_t)s1 + (uint32_t)s2) / 3);
 
     (*m_SoundGenCallback)(sound, sound);
 }
@@ -1723,31 +1724,5 @@ void CMotherboard::SetParallelOutCallback(PARALLELOUTCALLBACK outcallback)
     }
 }
 
-
-//////////////////////////////////////////////////////////////////////
-
-#if !defined(PRODUCT)
-
-void TraceInstruction(const CProcessor* pProc, const CMotherboard* pBoard, uint16_t address)
-{
-    bool okHaltMode = pProc->IsHaltMode();
-
-    uint16_t memory[4];
-    int addrtype;
-    for (uint16_t i = 0; i < 4; i++)
-        memory[i] = pBoard->GetWordView(address + i * 2, okHaltMode, true, &addrtype);
-
-    TCHAR bufaddr[8];
-    bufaddr[0] = okHaltMode ? 'H' : 'U';
-    PrintOctalValue(bufaddr + 1, address);
-
-    TCHAR instr[8];
-    TCHAR args[32];
-    DisassembleInstruction(memory, address, instr, args);
-
-    DebugLogFormat(_T("%s\t%s\t%s\r\n"), bufaddr, instr, args);
-}
-
-#endif
 
 //////////////////////////////////////////////////////////////////////
