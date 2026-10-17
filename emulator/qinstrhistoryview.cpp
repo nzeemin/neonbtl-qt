@@ -107,7 +107,8 @@ void QInstrHistoryView::paintEvent(QPaintEvent * /*event*/)
     QFontMetrics fontmetrics = painter.fontMetrics();
     int cxChar = fontmetrics.averageCharWidth();
     int cyLine = fontmetrics.height();
-    painter.setPen(palette().color(QPalette::Text));
+    QColor colorText = palette().color(QPalette::Text);
+    QColor colorInterrupt = Common_GetColorShifted(palette(), COLOR_JUMPHINT);
 
     int x = cxChar;
     int y = this->height() - fontmetrics.descent() - cyLine / 4;  // Baseline of the bottom line
@@ -119,17 +120,29 @@ void QInstrHistoryView::paintEvent(QPaintEvent * /*event*/)
 
         const InstructionRecord& record = m_snapshot[index];
 
-        char strInstr[8];
-        char strArg[32];
-        DisassembleInstruction(record.words, record.pc, strInstr, strArg);
-
         char bufaddr[7];
         PrintOctalValue(bufaddr, record.pc);
 
         char buffer[64];
-        _snprintf(buffer, sizeof(buffer) - 1, "%3d %c%s %s %s",
-                index, record.halt ? 'H' : 'U', bufaddr, strInstr, strArg);
+        if (record.interrupt)  // words: vector, new PC, new PSW
+        {
+            char bufvector[7], bufnewpc[7];
+            PrintOctalValue(bufvector, record.words[0]);
+            PrintOctalValue(bufnewpc, record.words[1]);
+            _snprintf(buffer, sizeof(buffer) - 1, "%3d %c%s INT %s %s -> %s",
+                    index, record.halt ? 'H' : 'U', bufaddr, bufvector, Emulator_GetInterruptName(record.words[0]), bufnewpc);
+        }
+        else
+        {
+            char strInstr[8];
+            char strArg[32];
+            DisassembleInstruction(record.words, record.pc, strInstr, strArg);
+
+            _snprintf(buffer, sizeof(buffer) - 1, "%3d %c%s %s %s",
+                    index, record.halt ? 'H' : 'U', bufaddr, strInstr, strArg);
+        }
         buffer[sizeof(buffer) - 1] = 0;
+        painter.setPen(record.interrupt ? colorInterrupt : colorText);
         painter.drawText(x, y, buffer);
 
         y -= cyLine;
