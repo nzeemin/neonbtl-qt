@@ -51,4 +51,4 @@ QT += multimedia
 DEFINES -= UNICODE _UNICODE
 TRANSLATIONS = neonbtl_en.ts neonbtl_ru.ts
 CONFIG += c++11
-QMAKE_CXXFLAGS += -std=c++11
+!msvc: QMAKE_CXXFLAGS += -std=c++11
