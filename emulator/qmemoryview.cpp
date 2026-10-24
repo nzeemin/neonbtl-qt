@@ -6,6 +6,7 @@
 #include <QStyle>
 #include <QStyleFactory>
 #include <QStyleOptionFocusRect>
+#include <QTabBar>
 #include <QToolBar>
 #include "main.h"
 #include "qmemoryview.h"
@@ -46,18 +47,27 @@ QMemoryView::QMemoryView()
 
     QFont font = Common_GetMonospacedFont();
     QFontMetrics fontmetrics(font);
-    int cxChar = fontmetrics.averageCharWidth();
+    //int cxChar = fontmetrics.averageCharWidth();
     int cyLine = fontmetrics.height();
 
     m_cyLine = cyLine;
 
     this->setFont(font);
-    this->setMinimumSize(cxChar * 68, cyLine * 9 + cyLine / 2);
 
     m_scrollbar = new QScrollBar(Qt::Vertical, this);
     m_scrollbar->setRange(0, 65536 - 16);
     m_scrollbar->setSingleStep(16);
     QObject::connect(m_scrollbar, SIGNAL(valueChanged(int)), this, SLOT(scrollValueChanged()));
+
+    m_tabbar = new QTabBar(this);
+    m_tabbar->setShape(QTabBar::RoundedNorth);
+    m_tabbar->setExpanding(false);
+    m_tabbar->setDrawBase(true);
+    m_tabbar->setFocusPolicy(Qt::NoFocus);  // The view keeps the keyboard focus
+    for (int mode = 0; mode <= MEMMODE_LAST; mode++)
+        m_tabbar->addTab(MemoryView_ModeNames[mode]);
+    m_tabbar->setCurrentIndex(m_Mode);
+    QObject::connect(m_tabbar, SIGNAL(currentChanged(int)), this, SLOT(setMode(int)));
 
     m_toolbar = new QToolBar(this);
     m_toolbar->setGeometry(4, 4, 36, 2000);
@@ -77,6 +87,8 @@ QMemoryView::QMemoryView()
     QObject::connect(actionOctalHex, SIGNAL(triggered()), this, SLOT(changeNumeralMode()));
 
     setFocusPolicy(Qt::ClickFocus);
+
+    updateLayout();
 }
 
 QMemoryView::~QMemoryView()
@@ -102,6 +114,37 @@ void QMemoryView::updateWindowText()
     parentWidget()->setWindowTitle(buffer);
 }
 
+void QMemoryView::updateLayout()
+{
+    QFontMetrics fontmetrics(Common_GetMonospacedFont());
+    int cxChar = fontmetrics.averageCharWidth();
+    int cyLine = fontmetrics.height();
+
+    m_yTop = m_tabbar->sizeHint().height();
+    m_toolbar->setGeometry(4, m_yTop + 4, 36, 2000);
+
+    m_PostionIncrement = (m_NumeralMode == MEMMODENUM_OCT) ? cxChar * 7 : cxChar * 5;
+    if (m_ByteMode)
+        m_PostionIncrement += cxChar;
+
+    // Page size in lines: below the tab bar and the address line
+    m_nPageSize = (this->height() - m_yTop) / cyLine - 1;
+    if (m_nPageSize < 1) m_nPageSize = 1;
+
+    // The scrollbar goes right after the characters column, and has the height of the scrolling part
+    int cxScroll = this->style()->pixelMetric(QStyle::PM_ScrollBarExtent);
+    int xFirst = 38 + 9 * cxChar;
+    int xScroll = xFirst + 8 * m_PostionIncrement + cxChar + 16 * cxChar + cxChar;
+    int yScroll = m_yTop + cyLine + fontmetrics.descent();
+    m_scrollbar->setGeometry(xScroll, yScroll, cxScroll, cyLine * m_nPageSize);
+    m_scrollbar->setPageStep(m_nPageSize * 16);
+
+    // The tab bar spans from the address column to the right edge of the scrollbar
+    m_tabbar->setGeometry(42, 0, xScroll + cxScroll - 42, m_yTop);
+
+    this->setMinimumSize(xScroll + cxScroll, m_yTop + cyLine * 9 + cyLine / 2);
+}
+
 void QMemoryView::updateData()
 {
 }
@@ -120,33 +163,25 @@ void QMemoryView::contextMenuEvent(QContextMenuEvent *event)
     QMenu menu(this);
     menu.addAction(QIcon(":/images/iconEditAddress.svg"), tr("Go to Address..."), this, SLOT(gotoAddress()));
     menu.addSeparator();
-
-    for (int mode = 0; mode <= MEMMODE_LAST; mode++)
-    {
-        const char * modeName = MemoryView_ModeNames[mode];
-        QAction * action = menu.addAction(modeName, this, SLOT(changeMemoryMode()));
-        action->setCheckable(true);
-        action->setData(mode);
-        if (m_Mode == mode)
-            action->setChecked(true);
-    }
-
-    menu.addSeparator();
     menu.addAction(QIcon(":/images/iconWordByte.svg"), tr("Words / Bytes"), this, SLOT(changeWordByteMode()));
     menu.addAction(QIcon(":/images/iconHex.svg"), tr("Octal / Hex"), this, SLOT(changeNumeralMode()));
 
     menu.exec(event->globalPos());
 }
 
-void QMemoryView::changeMemoryMode()
+void QMemoryView::setMode(int mode)
 {
-    QAction * action = qobject_cast<QAction*>(sender());
-    if (action == nullptr) return;
-    int mode = action->data().toInt();
     if (mode < 0 || mode > MEMMODE_LAST) return;
 
     m_Mode = mode;
     Settings_SetDebugMemoryMode(m_Mode);
+
+    if (m_tabbar->currentIndex() != mode)  // Mode changed not by the tab bar
+    {
+        m_tabbar->blockSignals(true);
+        m_tabbar->setCurrentIndex(mode);
+        m_tabbar->blockSignals(false);
+    }
 
     repaint();
     updateWindowText();
@@ -157,6 +192,7 @@ void QMemoryView::changeWordByteMode()
     m_ByteMode = !m_ByteMode;
     Settings_SetDebugMemoryByte(m_ByteMode);
 
+    updateLayout();  // The column width changes, so does the scrollbar position
     repaint();
 }
 
@@ -166,6 +202,7 @@ void QMemoryView::changeNumeralMode()
     m_NumeralMode = newMode;
     Settings_SetDebugMemoryNumeral(newMode);
 
+    updateLayout();  // The column width changes, so does the scrollbar position
     repaint();
 }
 
@@ -197,9 +234,7 @@ void QMemoryView::gotoAddress()
 
 void QMemoryView::resizeEvent(QResizeEvent *)
 {
-    int cxScroll = this->style()->pixelMetric(QStyle::PM_ScrollBarExtent);
-    m_scrollbar->setGeometry(this->width() - cxScroll, 0, cxScroll, this->height());
-    m_scrollbar->setPageStep((this->height() / m_cyLine - 2) * 16);
+    updateLayout();
 }
 
 void QMemoryView::scrollValueChanged()
@@ -268,32 +303,27 @@ void QMemoryView::paintEvent(QPaintEvent * /*event*/)
 
     m_cyLineMemory = cyLine;
 
-    if (m_NumeralMode == MEMMODENUM_OCT)
-        m_PostionIncrement = cxChar * 7;
-    else
-        m_PostionIncrement = cxChar * 5;
-    if (m_ByteMode)
-        m_PostionIncrement += cxChar;
-
     char buffer[7];
-    const char* ADDRESS_LINE_OCT_WORDS = "   addr  0      2      4      6      10     12     14     16";
-    const char* ADDRESS_LINE_OCT_BYTES = "   addr  0   1   2   3   4   5   6   7   10  11  12  13  14  15  16  17";
-    const char* ADDRESS_LINE_HEX_WORDS = "   addr  0    2    4    6    8    a    c    e";
-    const char* ADDRESS_LINE_HEX_BYTES = "   addr  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f";
-    if (m_NumeralMode == MEMMODENUM_OCT && !m_ByteMode)
-        painter.drawText(38, cyLine, ADDRESS_LINE_OCT_WORDS);
-    else if (m_NumeralMode == MEMMODENUM_OCT && m_ByteMode)
-        painter.drawText(38, cyLine, ADDRESS_LINE_OCT_BYTES);
-    else if (m_ByteMode)
-        painter.drawText(38, cyLine, ADDRESS_LINE_HEX_BYTES);
+    // Header line: each column label is drawn at the same x as the values below it, not as one
+    // string, so the columns stay aligned with any font metrics
+    painter.setPen(colorText);
+    int xFirst = 38 + 9 * cxChar;  // x of the first value
+    painter.drawText(38 + 3 * cxChar, m_yTop + cyLine, "addr");
+    int numBase = (m_NumeralMode == MEMMODENUM_OCT) ? 8 : 16;
+    if (!m_ByteMode)
+    {
+        for (int j = 0; j < 8; j++)  // One label per word, the offset of the word
+            painter.drawText(xFirst + j * m_PostionIncrement, m_yTop + cyLine, QString::number(j * 2, numBase));
+    }
     else
-        painter.drawText(38, cyLine, ADDRESS_LINE_HEX_WORDS);
-
-    // Calculate m_nPageSize
-    m_nPageSize = this->height() / cyLine - 1;
+    {
+        int cxSecondByte = ((m_NumeralMode == MEMMODENUM_OCT) ? 4 : 3) * cxChar;  // The high byte is drawn here from the low one
+        for (int k = 0; k < 16; k++)  // One label per byte, the offset of the byte
+            painter.drawText(xFirst + (k / 2) * m_PostionIncrement + (k & 1) * cxSecondByte, m_yTop + cyLine, QString::number(k, numBase));
+    }
 
     quint16 address = m_wBaseAddress;
-    int y = 2 * cyLine;
+    int y = m_yTop + 2 * cyLine;
     for (;;)    // Draw lines
     {
         if (m_NumeralMode == MEMMODENUM_OCT)
@@ -301,7 +331,7 @@ void QMemoryView::paintEvent(QPaintEvent * /*event*/)
         else
             DrawHexValue(painter, 38 + 3 * cxChar, y, address);
 
-        int x = 38 + 9 * cxChar;
+        int x = xFirst;
         ushort wchars[16];
         for (int j = 0; j < 8; j++)    // Draw words as octal value
         {
@@ -381,7 +411,7 @@ void QMemoryView::paintEvent(QPaintEvent * /*event*/)
         option.initFrom(this);
         option.state |= QStyle::State_KeyboardFocusChange;
         option.backgroundColor = QColor(Qt::gray);
-        option.rect = QRect(38, cyLine + fontmetrics.descent(), 28 * cxChar + 8 * m_PostionIncrement, cyLine * m_nPageSize);
+        option.rect = QRect(38, m_yTop + cyLine + fontmetrics.descent(), 28 * cxChar + 8 * m_PostionIncrement, cyLine * m_nPageSize);
         style()->drawPrimitive(QStyle::PE_FrameFocusRect, &option, &painter, this);
     }
 }
@@ -393,13 +423,7 @@ void QMemoryView::keyPressEvent(QKeyEvent *event)
     case Qt::Key_Space:
         if (event->isAutoRepeat()) return;
         event->accept();
-        if (m_Mode == MEMMODE_LAST)
-            m_Mode = 0;
-        else
-            m_Mode++;
-        Settings_SetDebugMemoryMode(m_Mode);
-        this->repaint();
-        updateWindowText();
+        setMode(m_Mode == MEMMODE_LAST ? 0 : m_Mode + 1);
         break;
 
     case Qt::Key_G:

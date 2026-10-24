@@ -4,6 +4,7 @@
 #include <QWidget>
 
 class QScrollBar;
+class QTabBar;
 class QToolBar;
 
 class QMemoryView : public QWidget
@@ -17,7 +18,7 @@ public:
     void updateWindowText();
 
 public slots:
-    void changeMemoryMode();
+    void setMode(int mode);  // Select the memory mode: from the tab bar, the Space key
     void changeWordByteMode();
     void changeNumeralMode();
     void gotoAddress();
@@ -33,6 +34,7 @@ protected:
     void wheelEvent(QWheelEvent *);
 
     void updateScrollPos();
+    void updateLayout();  // Column widths, page size, geometry of the tab bar, toolbar and scrollbar
     quint16 getWordFromMemory(quint16 address, bool& okValid, int& addrtype, quint16& wChanged);
 
 protected slots:
@@ -47,8 +49,10 @@ private:
     int m_nPageSize;  // Page size in lines
     int m_cyLine;
     int m_PostionIncrement = 100;  // Increment by X to the next word
+    int m_yTop = 0;  // Height of the tab bar: the content is shifted down by this
     QScrollBar *m_scrollbar;
     QToolBar* m_toolbar;
+    QTabBar* m_tabbar;
 };
 
 
