@@ -20,12 +20,13 @@ enum MemoryViewMode
     MEMMODE_CPU = 0,   // CPU memory
     MEMMODE_HALT = 1,  // HALT mode memory
     MEMMODE_USER = 2,  // USER mode memory
-    MEMMODE_LAST = 2,  // Last mode number
+    MEMMODE_PS = 3,    // Process List
+    MEMMODE_LAST = 3,  // Last mode number
 };
 
 static const char * MemoryView_ModeNames[] =
 {
-    "CPU", "HALT", "USER"
+    "CPU", "HALT", "USER", "Process List"
 };
 
 enum MemoryViewNumeralMode
@@ -81,6 +82,7 @@ QMemoryView::QMemoryView()
     m_toolbar->addSeparator();
     QAction* actionWordByte = m_toolbar->addAction(QIcon(":/images/iconWordByte.svg"), "");
     QAction* actionOctalHex = m_toolbar->addAction(QIcon(":/images/iconHex.svg"), "");
+    m_memoryActions << actionGotoAddr << actionWordByte << actionOctalHex;
 
     QObject::connect(actionGotoAddr, SIGNAL(triggered()), this, SLOT(gotoAddress()));
     QObject::connect(actionWordByte, SIGNAL(triggered()), this, SLOT(changeWordByteMode()));
@@ -142,11 +144,22 @@ void QMemoryView::updateLayout()
     // The tab bar spans from the address column to the right edge of the scrollbar
     m_tabbar->setGeometry(42, 0, xScroll + cxScroll - 42, m_yTop);
 
-    this->setMinimumSize(xScroll + cxScroll, m_yTop + cyLine * 9 + cyLine / 2);
+    // The process list header is 61 characters wide
+    int cxMin = qMax(xScroll + cxScroll, 38 + cxChar * 63);
+    this->setMinimumSize(cxMin, m_yTop + cyLine * 9 + cyLine / 2);
+
+    // Scrollbar, toolbar and the address/format actions make sense for the memory modes only
+    bool okMemory = m_Mode != MEMMODE_PS;
+    m_scrollbar->setVisible(okMemory);
+    m_toolbar->setVisible(okMemory);
+for (QAction * action : m_memoryActions)
+        action->setEnabled(okMemory);
 }
 
 void QMemoryView::updateData()
 {
+    if (m_Mode == MEMMODE_PS)
+        update();
 }
 
 void QMemoryView::focusInEvent(QFocusEvent *)
@@ -160,6 +173,8 @@ void QMemoryView::focusOutEvent(QFocusEvent *)
 
 void QMemoryView::contextMenuEvent(QContextMenuEvent *event)
 {
+    if (m_Mode == MEMMODE_PS) return;
+
     QMenu menu(this);
     menu.addAction(QIcon(":/images/iconEditAddress.svg"), tr("Go to Address..."), this, SLOT(gotoAddress()));
     menu.addSeparator();
@@ -183,12 +198,15 @@ void QMemoryView::setMode(int mode)
         m_tabbar->blockSignals(false);
     }
 
+    updateLayout();
     repaint();
     updateWindowText();
 }
 
 void QMemoryView::changeWordByteMode()
 {
+    if (m_Mode == MEMMODE_PS) return;
+
     m_ByteMode = !m_ByteMode;
     Settings_SetDebugMemoryByte(m_ByteMode);
 
@@ -198,6 +216,8 @@ void QMemoryView::changeWordByteMode()
 
 void QMemoryView::changeNumeralMode()
 {
+    if (m_Mode == MEMMODE_PS) return;
+
     int newMode = m_NumeralMode ^ 1;
     m_NumeralMode = newMode;
     Settings_SetDebugMemoryNumeral(newMode);
@@ -208,7 +228,7 @@ void QMemoryView::changeNumeralMode()
 
 void QMemoryView::scrollBy(qint16 delta)
 {
-    if (delta == 0) return;
+    if (delta == 0 || m_Mode == MEMMODE_PS) return;
 
     m_wBaseAddress = (quint16)(m_wBaseAddress + delta);
     m_wBaseAddress = m_wBaseAddress & ((quint16)~15);
@@ -220,6 +240,8 @@ void QMemoryView::scrollBy(qint16 delta)
 
 void QMemoryView::gotoAddress()
 {
+    if (m_Mode == MEMMODE_PS) return;
+
     quint16 value = m_wBaseAddress;
     QInputOctalDialog dialog(this, tr("Go To Address"), &value);
     if (dialog.exec() == QDialog::Rejected) return;
@@ -281,6 +303,118 @@ quint16 QMemoryView::getWordFromMemory(quint16 address, bool& okValid, int& addr
     }
 }
 
+// Reads a word as seen in HALT mode; 0 if the address is not in RAM
+quint16 QMemoryView::getWordFromHalt(quint16 address)
+{
+    quint32 offset;
+    int addrtype = g_pBoard->TranslateAddress(address, true, false, &offset);
+    if (addrtype < ADDRTYPE_RAM4)
+        return g_pBoard->GetRAMWordView(offset);
+    return 0;
+}
+
+void QMemoryView::paintProcessList(QPainter& painter)
+{
+    const int PROLENW = 35;  // process descriptor size, words
+    const int MAXPROCESSES = 64;  // guard against a broken list in uninitialized RAM
+    const char* PROCESS_LIST_HEADER  = "#   Name            Descript Priority State  Mem   Low   High";
+    const char* PROCESS_LIST_DIVIDER = "--- ----------------  ------  ------  -----  ----  ----  ----";
+
+    QFont font = Common_GetMonospacedFont();
+    painter.setFont(font);
+    QFontMetrics fontmetrics(font);
+    int cxChar = fontmetrics.averageCharWidth();
+    int cyLine = fontmetrics.height();
+    painter.setPen(palette().color(QPalette::Text));
+
+    quint16 pdptr = g_pBoard->GetRAMWordView(020572);   // pointer to first process-descriptor
+    quint16 freepr = g_pBoard->GetRAMWordView(020006);  // pointer to first free process-descriptor
+    quint16 running = g_pBoard->GetRAMWordView(020016); // pointer to current process
+    int maplen = qMin((int)g_pBoard->GetRAMWordView(020002), 256);  // length of ram-bit-map in bytes
+
+    int x = 38 + cxChar;
+    int y = m_yTop + cyLine;
+    painter.drawText(x, y, PROCESS_LIST_HEADER);
+    y += cyLine;
+    painter.drawText(x, y, PROCESS_LIST_DIVIDER);
+    y += cyLine;
+
+    char buffer[7];
+    int procno = 1;
+    while (pdptr != 0 && pdptr != freepr && procno <= MAXPROCESSES)
+    {
+        quint16 procinfo[PROLENW];
+        for (int i = 0; i < PROLENW; i++)
+            procinfo[i] = getWordFromHalt((quint16)(pdptr + i * 2));
+
+        ushort wname[16];
+        for (int i = 0; i < 16; i++)
+        {
+            quint8 ch = ((const quint8*)(procinfo + 24))[i];
+            wname[i] = TranslateDeviceCharToUnicode(ch);
+        }
+        QString name = QString::fromUtf16(wname, 16);
+
+        quint16 priority = procinfo[22];
+        QString prio;
+        if ((priority & 0100000) == 0)
+        {
+            PrintOctalValue(buffer, priority);
+            prio = QString::fromLatin1(buffer);
+        }
+        else
+        {
+            PrintOctalValue(buffer, (quint16)(0200000 - priority));
+            buffer[0] = '-';
+            prio = QString::fromLatin1(buffer);
+        }
+
+        const char* statestr;
+        if (pdptr == running)
+            statestr = "Run ";
+        else if ((procinfo[19] & 0040000) != 0)
+            statestr = "Wait";
+        else if ((procinfo[19] & 0000400) != 0)
+            statestr = "Tim ";
+        else if ((procinfo[19] & 0000377) != 0)
+            statestr = "Int ";
+        else
+            statestr = "I/O ";
+
+        // Memory map: one bit per 4K block, a zero bit means the block is used;
+        // the first 4 words are the low memory, the rest is the high memory
+        QString memstr = QStringLiteral("No memory map");
+        quint16 pmem = procinfo[23];
+        if (pmem != 0)
+        {
+            int memlow = 0, memhigh = 0;
+            for (int i = 0; i < (maplen + 1) / 2; i++)
+            {
+                quint16 membits = getWordFromHalt((quint16)(pmem + i * 2));
+                for (int b = 0; b < 16; b++)
+                {
+                    if ((membits & (1 << b)) == 0)
+                    {
+                        if (i < 4) memlow += 4; else memhigh += 4;
+                    }
+                }
+            }
+            memstr = QString("%1k  %2k  %3k").arg(memlow + memhigh, 3).arg(memlow, 3).arg(memhigh, 3);
+        }
+
+        PrintOctalValue(buffer, pdptr);
+        QString line = QString("%1  %2  %3  %4  %5   %6")
+                .arg(procno, 2).arg(name).arg(QString::fromLatin1(buffer)).arg(prio, 6)
+                .arg(QLatin1String(statestr)).arg(memstr);
+        painter.drawText(x, y, line);
+
+        pdptr = procinfo[34];  // p.dsucc
+        procno++;
+        y += cyLine;
+        if (y > this->height() + cyLine) break;
+    }
+}
+
 void QMemoryView::paintEvent(QPaintEvent * /*event*/)
 {
     if (g_pBoard == nullptr) return;
@@ -289,6 +423,12 @@ void QMemoryView::paintEvent(QPaintEvent * /*event*/)
 
     QPainter painter(this);
     painter.fillRect(36 + 4, 0, this->width(), this->height(), colorBackground);
+
+    if (m_Mode == MEMMODE_PS)
+    {
+        paintProcessList(painter);
+        return;
+    }
 
     QFont font = Common_GetMonospacedFont();
     painter.setFont(font);

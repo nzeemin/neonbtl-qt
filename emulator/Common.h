@@ -141,6 +141,7 @@ void CopyWordHexToClipboard(uint16_t value);
 void CopyWordBinaryToClipboard(uint16_t value);
 
 ushort Translate_KOI8R(quint8 ch);
+ushort TranslateDeviceCharToUnicode(quint8 ch);
 
 
 //////////////////////////////////////////////////////////////////////

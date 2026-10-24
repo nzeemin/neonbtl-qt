@@ -1,8 +1,11 @@
 ﻿#ifndef QMEMORYVIEW_H
 #define QMEMORYVIEW_H
 
+#include <QAction>
+#include <QList>
 #include <QWidget>
 
+class QPainter;
 class QScrollBar;
 class QTabBar;
 class QToolBar;
@@ -34,8 +37,10 @@ protected:
     void wheelEvent(QWheelEvent *);
 
     void updateScrollPos();
-    void updateLayout();  // Column widths, page size, geometry of the tab bar, toolbar and scrollbar
+    void updateLayout();  // Column widths, page size, geometry and visibility of the tab bar, toolbar and scrollbar
     quint16 getWordFromMemory(quint16 address, bool& okValid, int& addrtype, quint16& wChanged);
+    quint16 getWordFromHalt(quint16 address);
+    void paintProcessList(QPainter& painter);
 
 protected slots:
     void scrollValueChanged();
@@ -53,6 +58,7 @@ private:
     QScrollBar *m_scrollbar;
     QToolBar* m_toolbar;
     QTabBar* m_tabbar;
+    QList<QAction*> m_memoryActions;  // Toolbar actions disabled in the Process List mode
 };
 
 
